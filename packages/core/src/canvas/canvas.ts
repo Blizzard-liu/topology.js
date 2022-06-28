@@ -48,6 +48,7 @@ import {
   IValue,
   getTextColor,
   getGlobalColor,
+  clearLifeCycle,
 } from '../pen';
 import {
   calcRotate,
@@ -1437,11 +1438,12 @@ export class Canvas {
           this.willInactivePen = undefined;
         }
         if (this.store.active.length === 1) {
+          const activePen = this.store.active[0];
           if (
             this.store.data.locked === LockState.DisableMove ||
-            this.store.active[0].locked === LockState.DisableMove
+            activePen.locked === LockState.DisableMove
           ) {
-            this.store.active[0]?.onMouseMove && this.store.active[0].onMouseMove(this.store.active[0], this.mousePos);
+            activePen?.onMouseMove?.(activePen, this.mousePos);
           }
         }
         this.movePens(e);
@@ -2428,6 +2430,7 @@ export class Canvas {
     this.dirtyPenRect(pen);
 
     if (pen.type) {
+      // TODO: 上面 dirtyPenRect 方法会调用 initLineRect
       this.initLineRect(pen);
     } else if (!pen.anchors) {
       pen.anchors = pen.calculative.worldAnchors.map((pt) => {
@@ -3097,7 +3100,7 @@ export class Canvas {
         }
       }
       this.dirtyPenRect(pen, { worldRectIsReady: true });
-      pen.onResize && pen.onResize(pen);
+      this.execPenResize(pen);
     });
     this.calcActiveRect();
     this.canvasImage.initStatus();
@@ -3211,8 +3214,8 @@ export class Canvas {
       pen.calculative.iconHeight && (pen.calculative.iconHeight *= scaleY);
       calcExy(pen.calculative.worldRect);
       calcCenter(pen.calculative.worldRect);
-      pen.onResize && pen.onResize(pen);
       this.dirtyPenRect(pen, { worldRectIsReady: true });
+      this.execPenResize(pen);
       this.updateLines(pen);
     });
     this.getSizeCPs();
@@ -3335,8 +3338,9 @@ export class Canvas {
       pen.lineWidth === 0 && (value.lineWidth = 1);
       // TODO: 例如 pen.name = 'triangle' 的情况，但有图片，是否还需要变成矩形呢？
       if (isDomShapes.includes(pen.name) || pen.image) {
+        // 修改名称会执行 onDestroy ，清空它
         value.name = 'rectangle';
-        value.onMove = undefined;
+        value.onDestroy = undefined;
       }
       this.updateValue(pen, value);
       pen.calculative.image = undefined;
@@ -4512,7 +4516,10 @@ export class Canvas {
 
   updateValue(pen: Pen, data: IValue): void {
     const penRect = this.getPenRect(pen);
+    const oldName = pen.name;
     Object.assign(pen, data);
+    // data 可能没有 name 属性
+    const isChangedName = oldName !== pen.name; // name changed
     data.newId && this.changePenId(pen.id, data.newId);
     let willUpdatePath = false;
     let willCalcTextRect = false;
@@ -4553,6 +4560,11 @@ export class Canvas {
     }
 
     this.setCalculativeByScale(pen); // 该方法计算量并不大，所以每次修改都计算一次
+    if (isChangedName) {
+      pen.onDestroy?.(pen);
+      clearLifeCycle(pen);
+      // 后续代码会重算 path2D
+    }
     if (willSetPenRect) {
       const rect: Rect = {
         x: data.x ?? penRect.x,
@@ -4599,18 +4611,30 @@ export class Canvas {
     }
   }
 
+  /**
+   * 执行 pen ，以及 pen 的子孙节点的 onResize 生命周期函数
+   */
+  private execPenResize(pen: Pen) {
+    pen.onResize?.(pen);
+    pen.children?.forEach(chlidId => {
+      const child = this.store.pens[chlidId];
+      child && this.execPenResize(child);
+    })
+  }
+
   setPenRect(pen: Pen, rect: Rect, render = true) {
     if (pen.parentId) {
       // 子节点的 rect 值，一定得是比例值
       Object.assign(pen, rect);
     } else {
-      pen.x = this.store.data.origin.x + rect.x * this.store.data.scale;
-      pen.y = this.store.data.origin.y + rect.y * this.store.data.scale;
-      pen.width = rect.width * this.store.data.scale;
-      pen.height = rect.height * this.store.data.scale;
+      const { origin, scale } = this.store.data;
+      pen.x = origin.x + rect.x * scale;
+      pen.y = origin.y + rect.y * scale;
+      pen.width = rect.width * scale;
+      pen.height = rect.height * scale;
     }
     this.dirtyPenRect(pen);
-    pen.onResize?.(pen);
+    this.execPenResize(pen);
 
     render && this.render();
   }
