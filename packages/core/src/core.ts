@@ -852,6 +852,9 @@ export class Topology {
   scale(scale: number, center = { x: 0, y: 0 }) {
     this.canvas.scale(scale, center);
   }
+  reset() {
+    this.canvas.reset();
+  }
 
   translate(x: number, y: number) {
     this.canvas.translate(x, y);

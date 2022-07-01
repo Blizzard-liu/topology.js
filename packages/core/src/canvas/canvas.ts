@@ -3063,6 +3063,53 @@ export class Canvas {
       }
     }
   }
+    /**
+   * 重置画布到原点(0,0)
+   */
+     reset() {
+      let scale = 1;
+      let center = { x: 0, y: 0 }
+  
+      this.calibrateMouse(center);
+      const s = scale / this.store.data.scale;
+      this.store.data.scale = scale;
+      this.store.data.center = center;
+  
+      scalePoint(this.store.data.origin, s, center);
+      this.store.data.pens.forEach((pen) => {
+        if (pen.parentId) {
+          return;
+        }
+        scalePen(pen, s, center);
+        if (pen.isRuleLine) {
+          // 扩大线的比例，若是放大，即不缩小，若是缩小，会放大
+          const lineScale = s > 1 ? 1 : 1 / s / s;
+          // 中心点即为线的中心
+          const lineCenter = pen.calculative.worldRect.center;
+          if (!pen.width) {
+            // 垂直线
+            scalePen(pen, lineScale, lineCenter);
+          } else if (!pen.height) {
+            // 水平线
+            scalePen(pen, lineScale, lineCenter);
+          }
+        }
+        this.dirtyPenRect(pen, { worldRectIsReady: true });
+        this.execPenResize(pen);
+      });
+      this.calcActiveRect();
+      
+      const map = this.parent.map;
+      if (map && map.isShow) {
+        map.setView();
+      }
+      this.store.emitter.emit('scale', this.store.data.scale);
+
+      let x = 0 - (this.store.data.x + this.store.data.origin.x)
+      let y = 0 - (this.store.data.y + this.store.data.origin.y)
+      this.translate(x,y)
+
+    }
 
   /**
    * 缩放整个画布
