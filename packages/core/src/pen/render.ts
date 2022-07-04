@@ -524,9 +524,10 @@ export function renderPen(ctx: CanvasRenderingContext2D, pen: Pen) {
     if (pen.type === PenType.Line) {
       ctx.strokeStyle = store.options.dockPenColor;
     } else {
-      fill = rgba(store.options.dockPenColor, 0.2);
-      ctx.fillStyle = fill;
-      fill && (setBack = false);
+      //隐藏辅助线
+      // fill = rgba(store.options.dockPenColor, 0.2);
+      // ctx.fillStyle = fill;
+      // fill && (setBack = false);
     }
   } else {
     const strokeImg = pen.calculative.strokeImg;
