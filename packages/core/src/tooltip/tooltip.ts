@@ -17,17 +17,17 @@ export class Tooltip {
   constructor(public parentElement: HTMLElement, private store: TopologyStore) {
     this.box = document.createElement('div');
     this.text = document.createElement('div');
-    this.arrowUp = document.createElement('div');
-    this.arrowDown = document.createElement('div');
+    // this.arrowUp = document.createElement('div');
+    // this.arrowDown = document.createElement('div');
 
     this.box.className = 'topology-tooltip';
     this.text.className = 'text';
-    this.arrowUp.className = 'arrow';
-    this.arrowDown.className = 'arrow down';
+    // this.arrowUp.className = 'arrow';
+    // this.arrowDown.className = 'arrow down';
 
     this.box.appendChild(this.text);
-    this.box.appendChild(this.arrowUp);
-    this.box.appendChild(this.arrowDown);
+    // this.box.appendChild(this.arrowUp);
+    // this.box.appendChild(this.arrowDown);
     parentElement.appendChild(this.box);
 
     this.box.onmouseleave = () => {
@@ -53,17 +53,17 @@ export class Tooltip {
       document.head.appendChild(style);
       sheet = style.sheet;
       sheet.insertRule(
-        '.topology-tooltip{position:absolute;padding:8px 0;z-index:10;left: -9999px;top: -9999px;}'
+        '.topology-tooltip{position:absolute;padding:0;z-index:10;left: -9999px;top: -9999px;}'
       );
       sheet.insertRule(
-        '.topology-tooltip .text{max-width:320px;min-height:30px;max-height:400px;outline:none;padding:8px 16px;border-radius:4px;background:#777777;color:#ffffff;line-height:1.8;overflow-y:auto;}'
+        '.topology-tooltip .text{max-width:320px;min-height:20px;max-height:400px;outline:none;padding:2px 4px;border-radius:0;font-size:11px;background:#FFFBE5;color:#222;line-height:1.2;overflow-y:auto;}'
       );
-      sheet.insertRule(
-        '.topology-tooltip .arrow{position:absolute;border:6px solid transparent;background:transparent;top:-4px;left:50%;transform:translateX(-50%)}'
-      );
-      sheet.insertRule(
-        '.topology-tooltip .arrow.down{top:initial;bottom: 1.5px;}'
-      );
+      // sheet.insertRule(
+      //   '.topology-tooltip .arrow{position:absolute;border:6px solid transparent;background:transparent;top:-4px;left:50%;transform:translateX(-50%)}'
+      // );
+      // sheet.insertRule(
+      //   '.topology-tooltip .arrow.down{top:initial;bottom: 1.5px;}'
+      // );
     }
   }
 
@@ -165,14 +165,14 @@ export class Tooltip {
         rect.height;
     }
 
-    if (y > 0) {
-      this.arrowUp.style.borderBottomColor = 'transparent';
-      this.arrowDown.style.borderTopColor = '#777777';
-    } else {
-      y += elemRect.height + rect.height + 5;
-      this.arrowUp.style.borderBottomColor = '#777777';
-      this.arrowDown.style.borderTopColor = 'transparent';
-    }
+    // if (y > 0) {
+    //   this.arrowUp.style.borderBottomColor = 'transparent';
+    //   this.arrowDown.style.borderTopColor = '#fff';
+    // } else {
+    //   y += elemRect.height + rect.height + 5;
+    //   this.arrowUp.style.borderBottomColor = '#fff';
+    //   this.arrowDown.style.borderTopColor = 'transparent';
+    // }
 
     this.x = x;
     this.y = y;
