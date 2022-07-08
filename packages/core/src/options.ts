@@ -89,7 +89,7 @@ export const defaultOptions: Options = {
   hoverAnchorColor: '#FF4101',
   anchorRadius: 4,
   anchorBackground: '#fff',
-  dockColor: 'rgba(39,141,248,0.50)',
+  dockColor: 'rgba(39,141,248,0.90)',
   dockPenColor: '#1890FF',
   dragColor: '#1890ff',
   rotateCursor: 'rotate.cur',
