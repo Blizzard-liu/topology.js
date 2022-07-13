@@ -734,6 +734,8 @@ export class Canvas {
           width: img.width,
           height: img.height,
           name: 'image',
+          disableInput: true,
+          imageRatio: true,
           image: url,
         });
       };
