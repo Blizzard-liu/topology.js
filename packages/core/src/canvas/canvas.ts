@@ -728,12 +728,15 @@ export class Canvas {
     }
     return new Promise((resolve, reject) => {
       const img = new Image();
+      let ext =  url.substring(url.lastIndexOf('.') + 1)
+    // console.log('ext == ',ext)
+      let name = ext == 'gif' ? 'gif' : 'image'
       img.onload = () => {
         globalStore.htmlElements[url] = img;
         resolve({
           width: img.width,
           height: img.height,
-          name: 'image',
+          name,
           disableInput: true,
           imageRatio: true,
           image: url,
