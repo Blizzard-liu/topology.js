@@ -1729,7 +1729,8 @@ export class Topology {
       const pen = allPens[i];
       const index = pens.findIndex((p: Pen) => p.id === pen.id);
       if (index > -1) {
-        pens.unshift(pens[index]);
+        // pens.unshift(pens[index]);
+        pens.splice(1, 0, pens[index]);
         pens.splice(index + 1, 1);
         this.needInitStatus([pen]);
       }
@@ -1748,7 +1749,7 @@ export class Topology {
 
   down(pen: Pen, pens: Pen[] = this.store.data.pens) {
     const index = pens.findIndex((p: Pen) => p.id === pen.id);
-    if (index > -1 && index !== 0) {
+    if (index > -1 && index !== 1) {
       pens.splice(index - 1, 0, pens[index]);
       pens.splice(index + 1, 1);
       this.needInitStatus([pen]);
