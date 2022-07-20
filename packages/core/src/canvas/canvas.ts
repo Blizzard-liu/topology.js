@@ -428,7 +428,7 @@ export class Canvas {
       case 'A':
         if (e.ctrlKey || e.metaKey) {
           // TODO: ctrl + A 会选中 visible == false 的元素
-          this.active(this.store.data.pens.filter((pen) => !pen.parentId));
+          this.active(this.store.data.pens.filter((pen) => !pen.parentId && !pen.sw_custom_bg));
           e.preventDefault();
         } else {
           this.toggleAnchorMode();
