@@ -1800,6 +1800,9 @@ export class Canvas {
   }
 
   private hasImage(pen: Pen, isBottom: boolean): boolean {
+    if(pen.sw_custom_bg && !pen.image && isBottom) {
+      return true
+    }
     if (pen.image && pen.name !== 'gif' && !pen.isBottom == !isBottom) {
       return true;
     }
@@ -2825,6 +2828,9 @@ export class Canvas {
     ctx.strokeStyle = getGlobalColor(this.store);
 
     for (const pen of this.store.data.pens) {
+      if(pen.sw_custom_bg) {
+        continue
+      }
       if (!isFinite(pen.x)) {
         // 若不合法，即 NaN ，Infinite
         console.warn(pen, '画笔的 x 不合法');
