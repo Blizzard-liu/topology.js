@@ -102,32 +102,45 @@ function linearGradient(
   }
 
   const { x, y, center, ex, ey } = worldRect;
-  const from: Point = {
-    x,
-    y: center.y,
-  };
-  const to: Point = {
-    x: ex,
-    y: center.y,
-  };
-  if (angle % 90 === 0 && angle % 180) {
-    from.x = center.x;
-    to.x = center.x;
-    if (angle % 270) {
-      from.y = y;
-      to.y = ey;
-    } else {
-      from.y = ey;
-      to.y = y;
-    }
-  } else if (angle) {
-    rotatePoint(from, angle, worldRect.center);
-    rotatePoint(to, angle, worldRect.center);
-  }
+  // const from: Point = {
+  //   x,
+  //   y: center.y,
+  // };
+  // const to: Point = {
+  //   x: ex,
+  //   y: center.y,
+  // };
+  // if (angle % 90 === 0 && angle % 180) {
+  //   from.x = center.x;
+  //   to.x = center.x;
+  //   if (angle % 270) {
+  //     from.y = y;
+  //     to.y = ey;
+  //   } else {
+  //     from.y = ey;
+  //     to.y = y;
+  //   }
+  // } else if (angle) {
+  //   rotatePoint(from, angle, worldRect.center);
+  //   rotatePoint(to, angle, worldRect.center);
+  // }
 
   // contributor: https://github.com/sunnyguohua/topology
-  const grd = ctx.createLinearGradient(from.x, from.y, to.x, to.y);
-  grd.addColorStop(0, fromColor);
+  let startX,startY,endX,endY;
+  if(Math.abs(ex -x) > Math.abs(ey -y)) {
+    startX = center.x
+    endX = center.x
+    startY = y
+    endY = ey
+  } else {
+    startX = x
+    endX = ex
+    startY = center.y
+    endY = center.y
+  }
+  const grd = ctx.createLinearGradient(startX, startY, endX, endY);
+  grd.addColorStop(0, toColor);
+  grd.addColorStop(0.5, fromColor);
   grd.addColorStop(1, toColor);
   return grd;
 }
