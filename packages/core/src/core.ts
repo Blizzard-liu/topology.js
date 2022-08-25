@@ -206,17 +206,27 @@ export class Topology {
       console.warn('[topology] StopVideo event value is not a string');
     };
     this.events[EventAction.Function] = (pen: Pen, e: Event) => {
+      let customTags = pen.customTags || []
+      customTags = customTags.filter(el => el.value !== '')
       if (e.value && !e.fn) {
         try {
           if (typeof e.value !== 'string') {
             throw new Error('[topology] Function value must be string');
           }
           // TODO: 编译 string.replaceAll 报错
+        
+        customTags.forEach((el) => {
+          if (el.key == '') {
+            el.key = el.value
+          }
+        })
+        const keys = customTags.map((el) => el.key)
+
           const value: any = e.value;
           const fnJs = value.replaceAll
             ? value.replaceAll('.setValue(', '._setValue(')
             : value.replace(/.setValue\(/g, '._setValue(');
-          e.fn = new Function('pen', 'params', fnJs) as (
+          e.fn = new Function('pen', 'params','$SYS', ...keys, fnJs) as (
             pen: Pen,
             params: string
           ) => void;
@@ -224,7 +234,9 @@ export class Topology {
           console.error('[topology]: Error on make a function:', err);
         }
       }
-      e.fn?.(pen, e.params);
+      let sys_name = pen.sysName || sessionStorage.getItem('sys_name')
+      const values = customTags.map((el) => el.value)
+      e.fn?.(pen, e.params, sys_name , ...values);
     };
     this.events[EventAction.WindowFn] = (pen: Pen, e: Event) => {
       if (typeof e.value !== 'string') {
