@@ -226,7 +226,7 @@ export class Topology {
           const fnJs = value.replaceAll
             ? value.replaceAll('.setValue(', '._setValue(')
             : value.replace(/.setValue\(/g, '._setValue(');
-          e.fn = new Function('pen', 'params','$SYS', ...keys, fnJs) as (
+          e.fn = new Function('$SYS','$area_id','$module_id','$behavior', ...keys, fnJs) as (
             pen: Pen,
             params: string
           ) => void;
@@ -234,9 +234,12 @@ export class Topology {
           console.error('[topology]: Error on make a function:', err);
         }
       }
-      let sys_name = pen.sysName || sessionStorage.getItem('sys_name')
+      const {sysName, area_id, module_id, behavior } = this.store.data;
+      let sys_name = pen.sysName || sysName || sessionStorage.getItem('sys_name')
       const values = customTags.map((el) => el.value)
-      e.fn?.(pen, e.params, sys_name , ...values);
+
+      
+      e.fn?.call(pen, sys_name, area_id, module_id, behavior , ...values);
     };
     this.events[EventAction.WindowFn] = (pen: Pen, e: Event) => {
       if (typeof e.value !== 'string') {
