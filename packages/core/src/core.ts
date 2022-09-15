@@ -206,10 +206,11 @@ export class Topology {
       console.warn('[topology] StopVideo event value is not a string');
     };
     this.events[EventAction.Function] = (pen: Pen, e: Event) => {
+      try {
       let customTags = pen.customTags || []
       customTags = customTags.filter(el => el.value !== '')
       if (e.value && !e.fn) {
-        try {
+        
           if (typeof e.value !== 'string') {
             throw new Error('[topology] Function value must be string');
           }
@@ -230,9 +231,7 @@ export class Topology {
             pen: Pen,
             params: string
           ) => void;
-        } catch (err) {
-          console.error('[topology]: Error on make a function:', err);
-        }
+        
       }
       const {sysName, area_id, module_id, behavior } = this.store.data;
       let sys_name = pen.sysName || sysName || sessionStorage.getItem('sys_name')
@@ -240,6 +239,10 @@ export class Topology {
 
       
       e.fn?.call(pen, sys_name, area_id, module_id, behavior , ...values);
+
+    } catch (err) {
+      console.error('[topology]: Error on make a function:', err);
+    }
     };
     this.events[EventAction.WindowFn] = (pen: Pen, e: Event) => {
       if (typeof e.value !== 'string') {
