@@ -208,7 +208,7 @@ export class Topology {
     this.events[EventAction.Function] = (pen: Pen, e: Event) => {
       try {
       let customTags = pen.customTags || []
-      customTags = customTags.filter(el => el.value !== '')
+      customTags = customTags.filter(el => !(el.value === '' &&  el.key === '') ) //过滤掉key,value都是空的情况
       if (e.value && !e.fn) {
         
           if (typeof e.value !== 'string') {
@@ -242,6 +242,7 @@ export class Topology {
       }
       let sys_name = pen.sysName || sysName || sw
       const values = customTags.map((el) => el.value)
+      // console.log(customTags,values)
 
       
       e.fn?.call(pen, sys_name, area_id, module_id, behavior , ...values);
