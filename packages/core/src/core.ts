@@ -223,7 +223,9 @@ export class Topology {
         })
         const keys = customTags.map((el) => el.key)
 
-          const value: any = e.value;
+          let value: any = e.value;
+          value = value.replace(/pen./g, "this.");
+          
           const fnJs = value.replaceAll
             ? value.replaceAll('.setValue(', '._setValue(')
             : value.replace(/.setValue\(/g, '._setValue(');
