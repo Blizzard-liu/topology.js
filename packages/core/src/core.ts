@@ -229,7 +229,7 @@ export class Topology {
           const fnJs = value.replaceAll
             ? value.replaceAll('.setValue(', '._setValue(')
             : value.replace(/.setValue\(/g, '._setValue(');
-          e.fn = new Function('$SYS','$area_id','$module_id','$behavior', ...keys, fnJs) as (
+          e.fn = new Function('res','$SYS','$area_id','$module_id','$behavior', ...keys, fnJs) as (
             pen: Pen,
             params: string
           ) => void;
@@ -244,8 +244,10 @@ export class Topology {
       const values = customTags.map((el) => el.value)
       // console.log(customTags,values)
 
-      
-      e.fn?.call(pen, sys_name, area_id, module_id, behavior , ...values);
+      let res = sessionStorage.getItem('WS_DATA') || '[]'
+      res = JSON.parse(res)
+
+      e.fn?.call(pen,res, sys_name, area_id, module_id, behavior , ...values);
 
     } catch (err) {
       console.error('[topology]: Error on make a function:', err);
