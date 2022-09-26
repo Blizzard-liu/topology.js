@@ -241,6 +241,7 @@ export class Topology {
         sw = 'sw'+ sw
       }
       let sys_name = pen.sysName || sysName || sw
+      sys_name = sys_name.toLowerCase()
       const values = customTags.map((el) => el.value)
       // console.log(customTags,values)
 
