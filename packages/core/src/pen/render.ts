@@ -1508,6 +1508,16 @@ export function setNodeAnimateProcess(pen: Pen, process: number) {
       const lastVal = getFrameValue(pen, k, pen.calculative.frameIndex);
       pen.calculative.rotate = (pen.calculative.initRect.rotate + lastVal + frame[k] * process) % 360;
       pen.calculative.dirty = true;
+    } else if (k === 'image') {
+      pen.image = frame['image'];
+      pen.calculative.image = undefined;
+      pen.calculative.canvas.loadImage(pen);
+      if (pen.isBottom) {
+        pen.calculative.canvas.canvasImageBottom.initStatus();
+      } else {
+        pen.calculative.canvas.canvasImage.initStatus();
+      }
+    
     } else if (isLinear(frame[k], k, pen)) {
       if (pen.lastFrame[k] == null) {
         if (k === 'globalAlpha') {
