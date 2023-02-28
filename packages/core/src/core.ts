@@ -237,10 +237,8 @@ export class Topology {
       }
       const {sysName, area_id, module_id, behavior } = this.store.data;
       let sw = sessionStorage.getItem('sys_name') || ''
-      if(sw.indexOf('sw') === -1) {
-        sw = 'sw'+ sw
-      }
-      let sys_name = pen.sysName || sysName || sw
+      
+      let sys_name = pen.sysName || sw
       sys_name = sys_name.toLowerCase()
       const values = customTags.map((el) => el.value)
       // console.log(customTags,values)
