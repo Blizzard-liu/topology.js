@@ -1923,19 +1923,21 @@ export class Topology {
       children: [],
       showChild,
     };
-    const p = components.find((pen) => {
-      return pen.width === rect.width && pen.height === rect.height;
-    });
-    const oneIsParent = p && showChild === undefined;
-    if (oneIsParent) {
-      if (!p.children) {
-        p.children = [];
-      }
-      parent = p;
-    } else {
-      // 不影响画布数据，生成一个组合图形便于二次复用
-      // this.canvas.makePen(parent);
-    }
+    // const p = components.find((pen) => {
+    //   return pen.width === rect.width && pen.height === rect.height;
+    // });
+    // const oneIsParent = p && showChild === undefined;
+    const oneIsParent =  undefined;
+    // console.log('toComponent >>> ',{components},{parent},{rect},{oneIsParent})
+    // if (oneIsParent) {
+    //   if (!p.children) {
+    //     p.children = [];
+    //   }
+    //   parent = p;
+    // } else {
+    //   // 不影响画布数据，生成一个组合图形便于二次复用
+    //   // this.canvas.makePen(parent);
+    // }
 
     components.forEach((pen) => {
       if (pen === parent || pen.parentId === parent.id) {
