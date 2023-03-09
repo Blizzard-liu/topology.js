@@ -858,6 +858,16 @@ export class Topology {
     this.inactive();
   }
 
+  isCombine(pen: Pen) {
+    if (pen.name === 'combine') {
+      return true;
+    }
+    if (pen.children && pen.children.length > 0) {
+      return true;
+    }
+    return false;
+  }
+
   active(pens: Pen[], emit = true) {
     this.canvas.active(pens, emit);
   }

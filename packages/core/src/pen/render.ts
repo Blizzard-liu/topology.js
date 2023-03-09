@@ -1,6 +1,6 @@
 import { LineAnimateType, LockState, Pen } from './model';
 import { getSplitAnchor, line } from '../diagrams';
-import { Direction } from '../data';
+import { Direction,inheritanceProps } from '../data';
 import { calcRotate, distance, facePoint, Point, rotatePoint, scalePoint, translatePoint } from '../point';
 import {
   calcCenter,
@@ -1530,7 +1530,19 @@ export function setNodeAnimateProcess(pen: Pen, process: number) {
       const current = pen.lastFrame[k] + (frame[k] - pen.lastFrame[k]) * process;
       pen.calculative[k] = Math.round(current * 100) / 100;
     } else {
+      if (k === 'visible') {
+        if (pen.calculative.image) {
+          if (pen.isBottom) {
+            pen.calculative.canvas.canvasImageBottom.initStatus();
+          } else {
+            pen.calculative.canvas.canvasImage.initStatus();
+          }
+        }
+      }
       pen.calculative[k] = frame[k];
+      const v: any = {};
+      v[k] = frame[k];
+      setChildValue(pen, v);
     }
 
     if (k === 'text') {
@@ -1779,3 +1791,23 @@ function ctxDrawCanvas(ctx: CanvasRenderingContext2D, pen: Pen) {
     ctx.restore();
   }
 }
+
+export function setChildValue(pen, data) {
+  for (const k in data) {
+    if (inheritanceProps.includes(k)) {
+      pen[k] = data[k];
+      pen.calculative[k] = data[k];
+    }
+
+    if (
+      pen.calculative.canvas.parent.isCombine(pen) &&
+      pen.showChild === undefined
+    ) {
+      const children = pen.children;
+      children?.forEach((childId) => {
+        const child = pen.calculative.canvas.store.pens[childId];
+        setChildValue(child, data);
+      });
+    }
+  }
+  }
