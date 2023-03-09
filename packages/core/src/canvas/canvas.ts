@@ -3652,7 +3652,7 @@ export class Canvas {
     }
 
     const initPens = !doing && deepClone(pens, true);
-    translateRect(this.activeRect, x, y);
+    this.activeRect && translateRect(this.activeRect, x, y);
 
     const containChildPens = this.getAllByPens(pens);
     pens.forEach((pen) => {
