@@ -1,12 +1,13 @@
-import { getRectOfPoints, Pen, Rect, s8 } from '@topology/core';
-import { getRect, parseSvgPath } from '@topology/core/src/diagrams/svg/parse';
+import { getRectOfPoints, Pen, Rect, s8 } from '@meta2d/core';
+import { getRect, parseSvgPath } from '@meta2d/core/src/diagrams/svg/parse';
 import { XMLParser } from 'fast-xml-parser/src/fxp';
 
 const selfName = ':@';
 
 let allRect: Rect;
 let shapeScale: number; // 图形缩小比例
-// (window as any).parseSvg = parseSvg; //  TODO: 测试
+let anchorsArr = [];
+// globalThis.parseSvg = parseSvg; //  测试
 export function parseSvg(svg: string): Pen[] {
   const parser = new XMLParser({
     ignoreAttributes: false,
@@ -17,6 +18,7 @@ export function parseSvg(svg: string): Pen[] {
   const xmlJson: any[] = parser.parse(svg);
   const svgs = xmlJson.filter((item) => item.svg);
   const pens: Pen[] = [];
+  anchorsArr = [];
   svgs.forEach((svg) => {
     const selfProperty = svg[selfName];
     allRect = transformContainerRect(selfProperty);
@@ -43,8 +45,20 @@ export function parseSvg(svg: string): Pen[] {
 
     pens.push(...combinePens);
   });
-
+  setAnchor(pens[0]);
   return pens;
+}
+
+function setAnchor(pen: Pen) {
+  anchorsArr.map((item, index) => {
+    return {
+      id: index,
+      penId: pen.id,
+      x: item.x,
+      y: item.y,
+    };
+  });
+  pen.anchors = anchorsArr;
 }
 
 function transformCombines(selfProperty, children: any[]): Pen[] {
@@ -61,10 +75,21 @@ function transformCombines(selfProperty, children: any[]): Pen[] {
     children: [],
   };
   pens.push(combinePen);
-
   children.forEach((child) => {
     let pen: Pen | Pen[] = undefined;
     const childProperty = child[selfName];
+    if (childProperty && childProperty.transform) {
+      child.g &&
+        child.g.forEach((item) => {
+          if (!item[selfName]) {
+            item[selfName] = {
+              transform: childProperty.transform,
+            };
+          } else {
+            item[selfName].transform = childProperty.transform;
+          }
+        });
+    }
     if (child.g) {
       // g 类型
       pen = transformCombines(
@@ -74,7 +99,7 @@ function transformCombines(selfProperty, children: any[]): Pen[] {
           y: 0,
           width: 1,
           height: 1,
-          locked: 2, // 内层的 combine locked 2
+          locked: 10, // 内层的 combine locked 10
           ...childProperty,
         },
         child.g
@@ -92,21 +117,104 @@ function transformCombines(selfProperty, children: any[]): Pen[] {
       } else if (child.rect) {
         // rect 类型
         pen = transformRect(childProperty, pen);
+        const rectangle: Pen = pen;
+        //获取圆上右下左坐标
+        let circleAnchors = [
+          {
+            x: rectangle.x + rectangle.width * 0.5,
+            y: rectangle.y,
+          },
+          {
+            x: rectangle.x + rectangle.width * 1,
+            y: rectangle.y + rectangle.height * 0.5,
+          },
+          {
+            x: rectangle.x + rectangle.width * 0.5,
+            y: rectangle.y + rectangle.height * 1,
+          },
+          {
+            x: rectangle.x,
+            y: rectangle.y + rectangle.height * 0.5,
+          },
+        ];
+        circleAnchors.forEach((item) => {
+          if (
+            item.x <= 0.01 ||
+            item.x >= 0.99 ||
+            item.y <= 0.01 ||
+            item.y >= 0.99
+          ) {
+            anchorsArr.push(item);
+          }
+        });
       } else if (child.circle) {
         // circle 类型
         pen = transformCircle(childProperty, pen);
+        const circle: Pen = pen;
+        //获取圆上右下左坐标
+        let circleAnchors = [
+          {
+            x: circle.x + circle.width * 0.5,
+            y: circle.y,
+          },
+          {
+            x: circle.x + circle.width * 1,
+            y: circle.y + circle.height * 0.5,
+          },
+          {
+            x: circle.x + circle.width * 0.5,
+            y: circle.y + circle.height * 1,
+          },
+          {
+            x: circle.x,
+            y: circle.y + circle.height * 0.5,
+          },
+        ];
+        circleAnchors.forEach((item) => {
+          if (
+            item.x <= 0.01 ||
+            item.x >= 0.99 ||
+            item.y <= 0.01 ||
+            item.y >= 0.99
+          ) {
+            anchorsArr.push(item);
+          }
+        });
       } else if (child.ellipse) {
         // ellipse 类型
         pen = transformCircle(childProperty, pen);
       } else if (child.line) {
         // line 类型
         pen = transformLine(childProperty, pen);
+        const line: Pen = pen;
+        line.anchors.forEach((item) => {
+          const x = line.x + item.x * line.width;
+          const y = line.y + item.y * line.height;
+          if (x < 0.01 || x > 0.99 || y < 0.01 || y > 0.99) {
+            //TODO 连线太多的问题
+            anchorsArr.push({
+              x,
+              y,
+            });
+          }
+        });
       } else if (child.polygon) {
         // polygon 类型
         pen = transformPolygon(childProperty, pen);
       } else if (child.polyline) {
         // polyline 类型
         pen = transformPolyline(childProperty, pen);
+        const polyline: Pen = pen;
+        polyline.anchors.forEach((item) => {
+          const x = polyline.x + item.x * polyline.width;
+          const y = polyline.y + item.y * polyline.height;
+          if (x < 0.01 || x > 0.99 || y < 0.01 || y > 0.99) {
+            anchorsArr.push({
+              x,
+              y,
+            });
+          }
+        });
       } else if (child.text) {
         // text 类型
         pen = transformText(childProperty, child.text, pen);
@@ -134,16 +242,37 @@ function transformCombines(selfProperty, children: any[]): Pen[] {
       }
     }
   });
-
   return pens;
 }
+
+function getTranslate(transform: string) {
+  let offsetX = 0;
+  let offsetY = 0;
+  if (transform) {
+    let matchArr = transform
+      .replace('translate(', '')
+      .replace(')', '')
+      .split(',');
+    offsetX = parseFloat(matchArr[0]);
+    offsetY = parseFloat(matchArr[1]);
+  }
+  return {
+    offsetX,
+    offsetY,
+  };
+}
 function transformPath(path: any, pen: any): any {
-  const d = path.d;
+  let d = path.d;
   if (!d) {
     return;
   }
-  const rect = getRect(parseSvgPath(d));
-
+  let commands = parseSvgPath(d);
+  let rect = getRect(commands);
+  let { offsetX, offsetY } = getTranslate(path.transform);
+  rect.x += offsetX;
+  rect.ex += offsetX;
+  rect.y += offsetY;
+  rect.ey += offsetY;
   const x = (rect.x + pen.x - allRect.x) / allRect.width;
   const y = (rect.y + pen.y - allRect.y) / allRect.height;
   const width =
@@ -154,7 +283,7 @@ function transformPath(path: any, pen: any): any {
   const pathPen = {
     ...pen,
     name: 'svgPath',
-    pathId: s8(),    // 同样的 pathId ，避免重复存储 path
+    pathId: s8(), // 同样的 pathId ，避免重复存储 path
     path: d,
     x,
     y,
@@ -280,7 +409,7 @@ function transformNormalShape(
         y = Number(offsetY) || 0;
       }
       if (type === 'rotate') {
-        // TODO: transform 中的 rotate 圆心与 topology.js 圆心不一致，处理过程中默认把 translate 干掉
+        // TODO: transform 中的 rotate 圆心与 meta2d.js 圆心不一致，处理过程中默认把 translate 干掉
         // 旋转
         rotate = parseFloat(value);
         x = 0;
@@ -291,7 +420,7 @@ function transformNormalShape(
 
   return {
     id: s8(),
-    locked: 2,
+    locked: 10,
     parentId,
     x,
     y,
@@ -424,15 +553,24 @@ function transformText(childProperty, textContent, pen: any) {
   // 文字
   const text = textContent[0]?.[contentProp];
   const width = measureText(text, pen);
-  const height = pen.fontSize / shapeScale;
-
+  const height = 0; // pen.fontSize / shapeScale;
+  //TODO 这里为什么需要减去height
+  let { offsetX, offsetY } = getTranslate(childProperty.transform);
   return {
     ...pen,
     name: 'text',
     textAlign: 'left',
     text,
-    x: (childProperty.x || 0 - allRect.x + pen.x) / allRect.width,
-    y: (childProperty.y || 0 - allRect.y + pen.y - height) / allRect.height,
+    x:
+      (parseFloat(childProperty.x) + (offsetX || 0) - allRect.x + pen.x) /
+      allRect.width,
+    y:
+      (parseFloat(childProperty.y) +
+        (offsetY || 0) -
+        allRect.y +
+        pen.y -
+        height) /
+      allRect.height,
     width: width / allRect.width,
     height: height / allRect.height,
   };

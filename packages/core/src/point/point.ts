@@ -10,6 +10,9 @@ export enum TwoWay {
   Default,
   In,
   Out,
+  DisableConnected, // 禁止被连接
+  DisableConnectTo, // 禁止连线锚点连接其他锚点
+  Disable = 10,
 }
 
 export interface Point {
@@ -20,7 +23,9 @@ export interface Point {
   background?: string;
   id?: string;
   penId?: string;
+  // line连接的pen.id
   connectTo?: string;
+  // line连接的pen的anchor.id
   anchorId?: string;
   twoWay?: TwoWay;
   prev?: Point;
@@ -32,8 +37,12 @@ export interface Point {
   curvePoints?: Point[];
   rotate?: number;
   hidden?: boolean;
+  locked?: number;
   flag?: number;
-  isTemp?: boolean;  // 临时绘制的点
+  // 临时绘制的点
+  isTemp?: boolean;
+  // 拖拽停靠的锚点
+  dockAnchorId?: string;
 }
 
 export function rotatePoint(pt: Point, angle: number, center: Point) {
@@ -41,8 +50,14 @@ export function rotatePoint(pt: Point, angle: number, center: Point) {
     return;
   }
   const a = (angle * Math.PI) / 180;
-  const x = (pt.x - center.x) * Math.cos(a) - (pt.y - center.y) * Math.sin(a) + center.x;
-  const y = (pt.x - center.x) * Math.sin(a) + (pt.y - center.y) * Math.cos(a) + center.y;
+  const x =
+    (pt.x - center.x) * Math.cos(a) -
+    (pt.y - center.y) * Math.sin(a) +
+    center.x;
+  const y =
+    (pt.x - center.x) * Math.sin(a) +
+    (pt.y - center.y) * Math.cos(a) +
+    center.y;
   pt.x = x;
   pt.y = y;
 
@@ -51,7 +66,12 @@ export function rotatePoint(pt: Point, angle: number, center: Point) {
 }
 
 export function hitPoint(pt: Point, target: Point, radius = 5) {
-  return pt.x > target.x - radius && pt.x < target.x + radius && pt.y > target.y - radius && pt.y < target.y + radius;
+  return (
+    pt.x > target.x - radius &&
+    pt.x < target.x + radius &&
+    pt.y > target.y - radius &&
+    pt.y < target.y + radius
+  );
 }
 
 export function scalePoint(pt: Point, scale: number, center: Point) {

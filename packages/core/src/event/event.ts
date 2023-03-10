@@ -28,11 +28,17 @@ export enum EventAction {
   PauseAnimate,
   StopAnimate,
   Function,
-  WindowFn,
+  GlobalFn,
   Emit,
+  StartVideo,
+  PauseVideo,
+  StopVideo,
+  SendPropData,
+  SendVarData,
 }
 
 export interface Where {
+  type?: string | 'comparison';
   key?: string;
   comparison?: Comparison;
   value?: unknown;

@@ -1,7 +1,7 @@
 import { deleteTempAnchor, getFromAnchor, getToAnchor, Pen } from '../../pen';
 import { hitPoint, Point } from '../../point';
 import { getRectOfPoints, pointInSimpleRect, Rect } from '../../rect';
-import { TopologyStore } from '../../store';
+import { Meta2dStore } from '../../store';
 import { getBezierPoint, getQuadraticPoint } from './curve';
 
 export function line(
@@ -27,16 +27,16 @@ export function line(
   if (path instanceof Path2D) return path;
 }
 
-export function lineSegment(store: TopologyStore, pen: Pen, mousedwon?: Point) {
+export function lineSegment(store: Meta2dStore, pen: Pen, mousedwon?: Point) {
   if (!pen.calculative.worldAnchors) {
     pen.calculative.worldAnchors = [];
   }
 
-  if (pen.calculative.worldAnchors.length < 2) {
+  if (pen.calculative.worldAnchors.length < 2 || pen.anchors?.length > 1) {
     return;
   }
 
-  let from = pen.calculative.activeAnchor;
+  const from = getFromAnchor(pen);
   const to = getToAnchor(pen);
   if (!from || !to || !to.id || from === to) {
     return;

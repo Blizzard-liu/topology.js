@@ -1,48 +1,39 @@
-import { ChartData, Pen, setElemPosition } from '@topology/core';
+import { ChartData, Pen, setElemPosition } from '@meta2d/core';
 // TODO: 只引入 Chart 作为类型，开发时使用，上传需注释
 // import { Chart } from 'highcharts';
 
-export const highchartsList: {
-  Highcharts: any;
-  [id: string]: {
-    div: HTMLDivElement;
-    // chart: Chart;
-    chart: any;
-  };
-} = {
-  Highcharts: undefined,
-};
-
 export function highcharts(pen: Pen): Path2D {
-  if (!pen.onDestroy) {
-    pen.onDestroy = destory;
-    pen.onMove = move;
-    pen.onResize = resize;
-    pen.onRotate = move;
-    pen.onValue = value;
-    pen.onChangeId = changeId;
-    pen.onBeforeValue = beforeValue;
-  }
-
-  const path = new Path2D();
-  const worldRect = pen.calculative.worldRect;
-  if (!highchartsList.Highcharts && window) {
-    highchartsList.Highcharts = window['Highcharts'];
-  }
-  if (!(pen as any).highcharts || !highchartsList.Highcharts) {
+  const Highcharts = globalThis.Highcharts;
+  if (!Highcharts) {
     return;
   }
 
   if (typeof (pen as any).highcharts === 'string') {
     try {
       (pen as any).highcharts = JSON.parse((pen as any).highcharts.option);
-    } catch(e) {}
+    } catch (e) {}
   }
   if (!(pen as any).highcharts) {
     return;
   }
 
-  if (!highchartsList[pen.id] || !highchartsList[pen.id].div) {
+  if (!pen.onDestroy) {
+    pen.onDestroy = destory;
+    pen.onMove = move;
+    pen.onResize = resize;
+    pen.onRotate = move;
+    pen.onValue = value;
+    pen.onBeforeValue = beforeValue;
+  }
+
+  if (!pen.calculative.singleton) {
+    pen.calculative.singleton = {};
+  }
+
+  const path = new Path2D();
+  const worldRect = pen.calculative.worldRect;
+
+  if (!pen.calculative.singleton.div) {
     // 1. 创建父容器
     const div = document.createElement('div');
     div.style.position = 'absolute';
@@ -56,13 +47,10 @@ export function highcharts(pen: Pen): Path2D {
 
     div.id = pen.id;
     document.body.appendChild(div);
+    pen.calculative.singleton.div = div;
 
-    highchartsList[pen.id] = {
-      div,
-      chart: undefined,
-    };
     setTimeout(() => {
-      highchartsList[pen.id].chart = highchartsList.Highcharts.chart(
+      pen.calculative.singleton.highchart = Highcharts.chart(
         pen.id,
         (pen as any).highcharts.option
       );
@@ -75,60 +63,52 @@ export function highcharts(pen: Pen): Path2D {
 
   path.rect(worldRect.x, worldRect.y, worldRect.width, worldRect.height);
 
-  if (pen.calculative.dirty && highchartsList[pen.id]) {
-    setElemPosition(pen, highchartsList[pen.id].div);
+  if (pen.calculative.patchFlags && pen.calculative.singleton.div) {
+    setElemPosition(pen, pen.calculative.singleton.div);
   }
   return path;
 }
 
 function destory(pen: Pen) {
-  highchartsList[pen.id].div.remove();
-  const chart = highchartsList[pen.id].chart;
-  chart.destroy();
-  highchartsList[pen.id] = undefined;
+  if (pen.calculative.singleton && pen.calculative.singleton.div) {
+    pen.calculative.singleton.div.remove();
+    pen.calculative.singleton.highchart.destroy();
+
+    delete pen.calculative.singleton.div;
+    delete pen.calculative.singleton.highchart;
+  }
 }
 
 function move(pen: Pen) {
-  if (!highchartsList[pen.id]) {
+  if (!pen.calculative.singleton.div) {
     return;
   }
-  setElemPosition(pen, highchartsList[pen.id].div);
+  setElemPosition(pen, pen.calculative.singleton.div);
 }
 
 function resize(pen: Pen) {
-  if (!highchartsList[pen.id]) {
+  if (!pen.calculative.singleton.div) {
     return;
   }
-  setElemPosition(pen, highchartsList[pen.id].div);
-  highchartsList[pen.id].chart.reflow();
+  setElemPosition(pen, pen.calculative.singleton.div);
+  setTimeout(() => {
+    pen.calculative.singleton.highchart.reflow();
+  }, 100);
 }
 
 function value(pen: Pen) {
-  if (!highchartsList[pen.id]) {
+  if (!pen.calculative.singleton.div) {
     return;
   }
-  setElemPosition(pen, highchartsList[pen.id].div);
-  // highchartsList[pen.id].chart = highchartsList.Highcharts.chart(
-  //   pen.id,
-  //   (pen as any).highcharts.option
-  // );
-}
-
-function changeId(pen: Pen, oldId: string, newId: string) {
-  if (!highchartsList[oldId]) {
-    return;
-  }
-  highchartsList[oldId].div.id = newId;
-  highchartsList[newId] = highchartsList[oldId];
-  delete highchartsList[oldId];
+  setElemPosition(pen, pen.calculative.singleton.div);
 }
 
 function beforeValue(pen: Pen, value: ChartData): any {
   if ((value as any).highcharts) {
-    const chart = highchartsList[pen.id].chart;
+    const chart = pen.calculative.singleton.highchart;
     chart.update((value as any).highcharts.option);
     return value;
-  } else if ((!value.dataX && !value.dataY)) {
+  } else if (!value.dataX && !value.dataY) {
     return value;
   }
   // 1. 拿到老的 echarts
@@ -153,7 +133,9 @@ function beforeValue(pen: Pen, value: ChartData): any {
       }
       // xAxis 存在数组的情况，只考虑 单 x 轴的情况
       const xAxis = highcharts.option.xAxis;
-      const xData: any[] = Array.isArray(xAxis) ? xAxis[0].categories : xAxis.categories;
+      const xData: any[] = Array.isArray(xAxis)
+        ? xAxis[0].categories
+        : xAxis.categories;
       if (xData) {
         // categories 存在，手动添加 category
         // 只更改数据，不更新视图
@@ -185,7 +167,7 @@ function beforeValue(pen: Pen, value: ChartData): any {
       }
     }
     if (ys) {
-      const chart = highchartsList[pen.id].chart;
+      const chart = pen.calculative.singleton.highchart;
       chart.series.forEach((serie, index: number) => {
         ys[index].forEach((y, index2: number) => {
           let shift = false; // 是否扔掉第一个
@@ -223,7 +205,7 @@ function beforeValue(pen: Pen, value: ChartData): any {
       }
     }
     // 更新视图
-    const chart = highchartsList[pen.id].chart;
+    const chart = pen.calculative.singleton.highchart;
     chart.update(highcharts.option);
   }
   // 3. 设置完后，清空

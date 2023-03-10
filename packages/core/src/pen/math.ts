@@ -2,16 +2,20 @@ import { PenType } from '.';
 import { Point } from '../point';
 import {
   calcCenter,
-  getLargerRect,
+  expandRect,
   Rect,
   rectInFourAngRect,
   rectToPoints,
 } from '../rect';
-import { TopologyStore } from '../store';
+import { Meta2dStore } from '../store';
 import { deepClone } from '../utils';
 import { Pen } from './model';
 
-export function calcAnchorDock(e: Point, anchor: Point, store: TopologyStore) {
+export function calcAnchorDock(
+  store: Meta2dStore,
+  e: Point,
+  curAnchor?: Point
+) {
   let xDock: Point;
   let yDock: Point;
   let x = Infinity;
@@ -25,33 +29,39 @@ export function calcAnchorDock(e: Point, anchor: Point, store: TopologyStore) {
     // 得到图形的全部点
     const points = getPointsByPen(pen);
     points.forEach((pt) => {
-      if (pt === anchor) {
+      if (pt === e || pt === curAnchor) {
         return;
       }
-
+      let distance =
+        (pen.calculative.worldRect.center.x - e.x) *
+          (pen.calculative.worldRect.center.x - e.x) +
+        (pen.calculative.worldRect.center.y - e.y) *
+          (pen.calculative.worldRect.center.y - e.y);
       const disX = Math.abs(pt.x - e.x);
-      if (disX < size && disX < x) {
+      if (disX > 0 && disX < size && distance < x) {
         xDock = {
           x: Math.round(pt.x) + 0.5,
           y: Math.round(pt.y) + 0.5,
           prev: {
-            x: Math.round(anchor.x) + 0.5,
-            y: Math.round(anchor.y) + 0.5,
+            x: Math.round(e.x) + 0.5,
+            y: Math.round(e.y) + 0.5,
           },
+          step: pt.x - e.x,
         };
-        x = disX;
+        x = distance;
       }
       const disY = Math.abs(pt.y - e.y);
-      if (disY < size && disY < y) {
+      if (disY > 0 && disY < size && distance < y) {
         yDock = {
           x: Math.round(pt.x) + 0.5,
           y: Math.round(pt.y) + 0.5,
           prev: {
-            x: Math.round(anchor.x) + 0.5,
-            y: Math.round(anchor.y) + 0.5,
+            x: Math.round(e.x) + 0.5,
+            y: Math.round(e.y) + 0.5,
           },
+          step: pt.y - e.y,
         };
-        y = disY;
+        y = distance;
       }
     });
   }
@@ -62,283 +72,8 @@ export function calcAnchorDock(e: Point, anchor: Point, store: TopologyStore) {
   };
 }
 
-// export function calcRectDock(store: TopologyStore, rect: Rect) {
-//   let xDock: Point;
-//   let yDock: Point;
-//   let x = Infinity;
-//   let y = Infinity;
-//   const size = 8;
-//   if (store.options.disableDockLine) {
-//     return {
-//       // undefined , 不画对齐线了
-//       xDock,
-//       yDock,
-//     };
-//   }
-//   store.data.pens.forEach((pen) => {
-//     if (pen.calculative.active || pen.calculative.inView === false) {
-//       return;
-//     }
-
-//     if (store.active[0]?.connectedLines) {
-//       for (const item of store.active[0].connectedLines) {
-//         if (item.lineId === pen.id) {
-//           return;
-//         }
-//       }
-//     }
-
-//     const r = pen.calculative.worldRect;
-//     let step = r.x - rect.x;
-//     let disX = Math.abs(step);
-//     if (disX < size && disX < x) {
-//       xDock = {
-//         x: Math.round(r.x) + 0.5,
-//         y: Math.round(r.y) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.x) + 0.5, y: Math.round(rect.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       x = disX;
-//     }
-
-//     step = r.ex - rect.x;
-//     disX = Math.abs(step);
-//     if (disX < size && disX < x) {
-//       xDock = {
-//         x: Math.round(r.ex) + 0.5,
-//         y: Math.round(r.y) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.x) + 0.5, y: Math.round(rect.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       x = disX;
-//     }
-
-//     if (!r.center) {
-//       r.center = {
-//         x: r.x + r.width / 2,
-//         y: r.y + r.height / 2,
-//       };
-//     }
-
-//     step = r.center.x - rect.x;
-//     disX = Math.abs(step);
-//     if (disX < size && disX < x) {
-//       xDock = {
-//         x: Math.round(r.center.x) + 0.5,
-//         y: Math.round(r.y) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.x) + 0.5, y: Math.round(rect.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       x = disX;
-//     }
-
-//     step = r.x - rect.center.x;
-//     disX = Math.abs(step);
-//     if (disX < size && disX < x) {
-//       xDock = {
-//         x: Math.round(r.x) + 0.5,
-//         y: Math.round(r.y) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.center.x) + 0.5, y: Math.round(rect.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       x = disX;
-//     }
-
-//     step = r.ex - rect.center.x;
-//     disX = Math.abs(step);
-//     if (disX < size && disX < x) {
-//       xDock = {
-//         x: Math.round(r.ex) + 0.5,
-//         y: Math.round(r.y) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.center.x) + 0.5, y: Math.round(rect.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       x = disX;
-//     }
-
-//     step = r.center.x - rect.center.x;
-//     disX = Math.abs(step);
-//     if (disX < size && disX < x) {
-//       xDock = {
-//         x: Math.round(r.center.x) + 0.5,
-//         y: Math.round(r.y) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.center.x) + 0.5, y: Math.round(rect.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       x = disX;
-//     }
-
-//     step = r.x - rect.ex;
-//     disX = Math.abs(step);
-//     if (disX < size && disX < x) {
-//       xDock = {
-//         x: Math.round(r.x) + 0.5,
-//         y: Math.round(r.y) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.ex) + 0.5, y: Math.round(rect.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       x = disX;
-//     }
-
-//     step = r.ex - rect.ex;
-//     disX = Math.abs(step);
-//     if (disX < size && disX < x) {
-//       xDock = {
-//         x: Math.round(r.ex) + 0.5,
-//         y: Math.round(r.y) + 0.5,
-//         step: r.ex - rect.ex,
-//         prev: { x: Math.round(rect.ex) + 0.5, y: Math.round(rect.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       x = disX;
-//     }
-
-//     step = r.center.x - rect.ex;
-//     disX = Math.abs(step);
-//     if (disX < size && disX < x) {
-//       xDock = {
-//         x: Math.round(r.center.x) + 0.5,
-//         y: Math.round(r.y) + 0.5,
-//         step: r.center.x - rect.ex,
-//         prev: { x: Math.round(rect.ex) + 0.5, y: Math.round(rect.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       x = disX;
-//     }
-
-//     step = r.y - rect.y;
-//     let disY = Math.abs(step);
-//     if (disY < size && disY < y) {
-//       yDock = {
-//         x: Math.round(r.x) + 0.5,
-//         y: Math.round(r.y) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.x) + 0.5, y: Math.round(rect.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       y = disY;
-//     }
-
-//     step = r.ey - rect.y;
-//     disY = Math.abs(step);
-//     if (disY < size && disY < y) {
-//       yDock = {
-//         x: Math.round(r.x) + 0.5,
-//         y: Math.round(r.ey) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.x) + 0.5, y: Math.round(rect.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       y = disY;
-//     }
-
-//     step = r.center.y - rect.y;
-//     disY = Math.abs(step);
-//     if (disY < size && disY < y) {
-//       yDock = {
-//         x: Math.round(r.x) + 0.5,
-//         y: Math.round(r.center.y) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.x) + 0.5, y: Math.round(rect.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       y = disY;
-//     }
-
-//     step = r.y - rect.center.y;
-//     disY = Math.abs(step);
-//     if (disY < size && disY < y) {
-//       yDock = {
-//         x: Math.round(r.x) + 0.5,
-//         y: Math.round(r.y) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.x) + 0.5, y: Math.round(rect.center.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       y = disY;
-//     }
-
-//     step = r.ey - rect.center.y;
-//     disY = Math.abs(step);
-//     if (disY < size && disY < y) {
-//       yDock = {
-//         x: Math.round(r.x) + 0.5,
-//         y: Math.round(r.ey) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.x) + 0.5, y: Math.round(rect.center.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       y = disY;
-//     }
-
-//     step = r.center.y - rect.center.y;
-//     disY = Math.abs(step);
-//     if (disY < size && disY < y) {
-//       yDock = {
-//         x: Math.round(r.x) + 0.5,
-//         y: Math.round(r.center.y) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.x) + 0.5, y: Math.round(rect.center.y) + 0.5 },
-//         penId: pen.id
-//       };
-//       y = disY;
-//     }
-
-//     step = r.y - rect.ey;
-//     disY = Math.abs(step);
-//     if (disY < size && disY < y) {
-//       yDock = {
-//         x: Math.round(r.x) + 0.5,
-//         y: Math.round(r.y) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.x) + 0.5, y: Math.round(rect.ey) + 0.5 },
-//         penId: pen.id
-//       };
-//       y = disY;
-//     }
-
-//     step = r.ey - rect.ey;
-//     disY = Math.abs(step);
-//     if (disY < size && disY < y) {
-//       yDock = {
-//         x: Math.round(r.x) + 0.5,
-//         y: Math.round(r.ey) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.x) + 0.5, y: Math.round(rect.ey) + 0.5 },
-//         penId: pen.id
-//       };
-//       y = disY;
-//     }
-
-//     step = r.center.y - rect.ey;
-//     disY = Math.abs(step);
-//     if (disY < size && disY < y) {
-//       yDock = {
-//         x: Math.round(r.x) + 0.5,
-//         y: Math.round(r.center.y) + 0.5,
-//         step,
-//         prev: { x: Math.round(rect.x) + 0.5, y: Math.round(rect.ey) + 0.5 },
-//         penId: pen.id
-//       };
-//       y = disY;
-//     }
-//   });
-
-//   return {
-//     xDock,
-//     yDock,
-//   };
-// }
-
 export function calcMoveDock(
-  store: TopologyStore,
+  store: Meta2dStore,
   rect: Rect,
   pens: Pen[],
   offset: Point
@@ -369,8 +104,8 @@ export function getPointsByPen(pen: Pen): Point[] {
     const outerPoints = rectToPoints(pen.calculative.worldRect);
     calcCenter(pen.calculative.worldRect);
     return [
-      ...outerPoints,
       ...pen.calculative.worldAnchors,
+      ...outerPoints,
       pen.calculative.worldRect.center,
     ];
   } else if (pen.type === PenType.Line) {
@@ -379,7 +114,7 @@ export function getPointsByPen(pen: Pen): Point[] {
 }
 
 export function calcResizeDock(
-  store: TopologyStore,
+  store: Meta2dStore,
   rect: Rect,
   pens: Pen[],
   resizeIndex: number
@@ -395,31 +130,36 @@ export function calcResizeDock(
  * @param calcActive 是否与 活动层画笔 的点进行计算
  */
 function calcDockByPoints(
-  store: TopologyStore,
+  store: Meta2dStore,
   activePoints: Point[],
   rect: Rect,
   calcActive = false
 ): { xDock: Point; yDock: Point } {
   let xDock: Point;
   let yDock: Point;
-  let x = Infinity;
-  let y = Infinity;
-  const size = 8;
-  const largerRect = getLargerRect(rect, size); // rect 扩大 size 区域
-  // 过滤出本次需要计算的画笔们
-  const pens = store.data.pens.filter((pen) => {
+  let minCloseX = Infinity;
+  let minCloseY = Infinity;
+
+  // 临近范围
+  const closeSize = 10;
+  const paddingRect = expandRect(rect, closeSize);
+  store.data.pens.forEach((pen) => {
     const { inView, worldRect, active } = pen.calculative;
-    return !(
+    if (
       inView === false ||
-      (!calcActive && active) ||  // 如果不计算活动层，则过滤掉活动层
-      rectInFourAngRect(largerRect, worldRect) || // 水平和垂直方向 无重合
+      (!calcActive && active) || // 如果不计算活动层，则过滤掉活动层
+      rectInFourAngRect(paddingRect, worldRect) || // 水平和垂直方向 无重合
       (pen.type &&
         store.active.some((active) => isConnectLine(store, active, pen)))
-    );
-  });
-  for (const pen of pens) {
+    ) {
+      return;
+    }
+
     // 得到图形的全部点
     const points = getPointsByPen(pen);
+    if (!points) {
+      return;
+    }
     // 比对 points 中的点，必须找出最近的点，不可提前跳出
     for (const point of points) {
       for (const activePoint of activePoints) {
@@ -427,7 +167,13 @@ function calcDockByPoints(
         const stepY = point.y - activePoint.y;
         const absStepX = Math.abs(stepX);
         const absStepY = Math.abs(stepY);
-        if (absStepX < size && absStepX < x) {
+        if (!rect.center) {
+          rect.center = {
+            x: rect.x + rect.width / 2,
+            y: rect.y + rect.height / 2,
+          };
+        }
+        if (absStepX < closeSize && absStepX < minCloseX) {
           xDock = {
             x: Math.round(point.x) + 0.5,
             y: Math.round(point.y) + 0.5,
@@ -437,10 +183,12 @@ function calcDockByPoints(
               y: Math.round(activePoint.y) + 0.5,
             },
             penId: pen.id,
+            anchorId: activePoint.id,
+            dockAnchorId: point.id,
           };
-          x = absStepX;
+          minCloseX = absStepX;
         }
-        if (absStepY < size && absStepY < y) {
+        if (absStepY < closeSize && absStepY < minCloseY) {
           yDock = {
             x: Math.round(point.x) + 0.5,
             y: Math.round(point.y) + 0.5,
@@ -450,12 +198,15 @@ function calcDockByPoints(
               y: Math.round(activePoint.y) + 0.5,
             },
             penId: pen.id,
+            anchorId: activePoint.id,
+            dockAnchorId: point.id,
           };
-          y = absStepY;
+          minCloseY = absStepY;
         }
       }
     }
-  }
+  });
+
   return {
     xDock,
     yDock,
@@ -469,7 +220,7 @@ function calcDockByPoints(
  * @param line 连线
  * @returns
  */
-function isConnectLine(store: TopologyStore, active: Pen, line: Pen) {
+function isConnectLine(store: Meta2dStore, active: Pen, line: Pen) {
   if (!line.type) {
     return false;
   }

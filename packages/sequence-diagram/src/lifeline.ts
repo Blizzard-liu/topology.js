@@ -1,4 +1,4 @@
-import { Pen } from '@topology/core';
+import { Pen } from '@meta2d/core';
 
 export function lifeline(ctx: CanvasRenderingContext2D, pen: Pen) {
   const headHeight = (pen as any).headHeight ?? 50;
@@ -32,7 +32,6 @@ export function lifeline(ctx: CanvasRenderingContext2D, pen: Pen) {
   const middle = x + width / 2;
   ctx.moveTo(middle, y + headHeight + 1);
   ctx.lineTo(middle, ey);
-  ctx.closePath();
   ctx.stroke();
   ctx.restore();
 }

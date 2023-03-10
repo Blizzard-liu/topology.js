@@ -12,6 +12,8 @@ export enum LockState {
   None,
   DisableEdit,
   DisableMove,
+  DisableScale, //仅占位
+  DisableMoveScale,
   // DisableActive,
   Disable = 10,
 }
@@ -56,7 +58,7 @@ export const needCalcTextRectProps = [
 
 export const needSetPenProps = ['x', 'y', 'width', 'height'];
 
-export const needDirtyPenRectProps = [
+export const needPatchFlagsPenRectProps = [
   'paddingTop',
   'paddingRight',
   'paddingBottom',
@@ -79,7 +81,9 @@ export type TextAlign = 'left' | 'center' | 'right';
 export type TextBaseline = 'top' | 'middle' | 'bottom';
 export type WhiteSpace = 'nowrap' | 'pre-line' | 'break-all' | '';
 // SetValue 方法参数类型
-export type IValue = Pen & Partial<ChartData> & Partial<Record<'tag' | 'newId', string>> & { [key: string]: any };
+export type IValue = Pen &
+  Partial<ChartData> &
+  Partial<Record<'tag' | 'newId', string>> & { [key: string]: any };
 
 // obj 类型数组 text 字段显示文字，其它属性选中后合并到画笔上
 // string 类型，只展示文字
@@ -280,6 +284,7 @@ export interface Pen extends Rect {
   isBottom?: boolean; // 是否是底部图片
   form?: FormItem[]; // 业务表单
   lockedOnCombine?: LockState; // 组合成 combine ，该节点的 locked 值
+  ratio?: boolean; //宽高比锁定
   // calculative 对象中的值是为了动画存在，表明了渐变过程中，画布上绘制的当前值
   calculative?: {
     x?: number;
@@ -373,7 +378,7 @@ export interface Pen extends Rect {
     isDock?: boolean; // 是否是对齐参考画笔
     pencil?: boolean;
     activeAnchor?: Point;
-    dirty?: boolean;
+    patchFlags?: boolean;
     visible?: boolean; // TODO: visible 是否参与动画呢？
     // 仅仅内部专用
     inView?: boolean;
@@ -420,16 +425,22 @@ export interface Pen extends Rect {
     flipX?: boolean;
     flipY?: boolean;
 
+    h?: boolean; // 是否水平
+
     hiddenText?: boolean; // 隐藏 text
     keepDecimal?: number; // undefined 显示原内容；0 显示整数；保留几位小数
     showChild?: number; // 第几个子元素展示 undefined 即展示全部
     animateDotSize?: number; // 线条原点动画，原点大小
+    zIndex?: number; //dom节点 z-index;
     // media element
     onended?: (pen: Pen) => void;
+
+    // 不应该被deepClone多份的数据，例如外部第三方组件库挂载点，
+    singleton?: any;
   };
 
-  // 最后一个动画帧状态数据
-  lastFrame?: Pen;
+  // 前一个动画帧状态数据
+  prevFrame?: Pen;
 
   onAdd?: (pen: Pen) => void;
   onValue?: (pen: Pen) => void;
@@ -447,7 +458,10 @@ export interface Pen extends Rect {
   onShowInput?: (pen: Pen, e: Point) => void;
   onInput?: (pen: Pen, text: string) => void;
   onChangeId?: (pen: Pen, oldId: string, newId: string) => void;
-  onBinds?: (pen: Pen, values: IValue[], formItem: FormItem) => IValue[];
+  onBinds?: (pen: Pen, values: IValue[], formItem: FormItem) => IValue;
+  onStartVideo?: (pen: Pen) => void;
+  onPauseVideo?: (pen: Pen) => void;
+  onStopVideo?: (pen: Pen) => void;
 }
 
 // 属性绑定变量
@@ -480,7 +494,14 @@ export interface ChartData {
 /**
  * dom 类型的 图形
  */
-export const isDomShapes = ['gif', 'iframe', 'video', 'echarts', 'highcharts', 'lightningCharts'];
+export const isDomShapes = [
+  'gif',
+  'iframe',
+  'video',
+  'echarts',
+  'highcharts',
+  'lightningCharts',
+];
 
 // 格式刷同步的属性
 export const formatAttrs: Set<string> = new Set([
@@ -542,4 +563,36 @@ export const formatAttrs: Set<string> = new Set([
   'ellipsis',
   'hiddenText',
   'keepDecimal',
+  'borderWidth',
+  'borderColor',
+  'lineWidth',
+  'lineAnimateType',
+  'frames',
+  'animateColor',
+  'animateType',
+  'animateReverse',
+  'background',
 ]);
+
+/**
+ * 清空 pen 的 生命周期
+ */
+export function clearLifeCycle(pen: Pen) {
+  pen.onAdd = undefined;
+  pen.onValue = undefined;
+  pen.onBeforeValue = undefined;
+  pen.onDestroy = undefined;
+  pen.onMove = undefined;
+  pen.onResize = undefined;
+  pen.onRotate = undefined;
+  pen.onClick = undefined;
+  pen.onMouseEnter = undefined;
+  pen.onMouseLeave = undefined;
+  pen.onMouseDown = undefined;
+  pen.onMouseMove = undefined;
+  pen.onMouseUp = undefined;
+  pen.onShowInput = undefined;
+  pen.onInput = undefined;
+  pen.onChangeId = undefined;
+  pen.onBinds = undefined;
+}

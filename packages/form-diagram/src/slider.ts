@@ -1,14 +1,16 @@
 import { formPen } from './common';
 import { Point } from '../../core/src/point';
-import { calcExy, calcTextRect } from '@topology/core';
+import { calcRightBottom, calcTextRect } from '@meta2d/core';
 
 export function slider(ctx: CanvasRenderingContext2D, pen: formPen) {
   if (!pen.onAdd) {
     pen.onAdd = initRect;
     pen.onResize = initRect;
+    pen.onMove = initRect;
     pen.onMouseMove = mouseMove;
     pen.onMouseDown = mouseDown;
     pen.onValue = onValue;
+    pen.onBeforeValue = beforeValue;
   }
 
   if (!pen.calculative.barRect) {
@@ -97,21 +99,22 @@ function initRect(pen: formPen) {
     width: barWidth,
     height: pen.barHeight * scaleY,
   };
-  calcExy(pen.calculative.barRect);
+  calcRightBottom(pen.calculative.barRect);
 
   calcBallRect(pen);
 }
 
 function calcBallRect(pen: formPen) {
   const height = pen.calculative.barRect.height * 3.5;
-  const progress = (pen.calculative.barRect.width * pen.value) / 100;
+  const progress =
+    (pen.calculative.barRect.width * (pen.value as number)) / 100;
   pen.calculative.ballRect = {
     x: progress,
     y: (pen.calculative.worldRect.height - height) / 2,
     width: height,
     height,
   };
-  calcExy(pen.calculative.ballRect);
+  calcRightBottom(pen.calculative.ballRect);
 
   pen.calculative.text = pen.value + pen.unit;
   calcTextRect(pen);
@@ -130,7 +133,6 @@ function mouseDown(pen: formPen, e: Point) {
   if (value < 0 || value > 100) {
     return;
   }
-  // console.log('move', value);
   pen.value = value;
   calcBallRect(pen);
   pen.calculative.text = pen.value + pen.unit;
@@ -146,5 +148,22 @@ function mouseMove(pen: formPen, e: Point) {
 }
 
 function onValue(pen: formPen) {
+  if (pen.calculative.isUpdateData) {
+    delete pen.calculative.isUpdateData;
+    initRect(pen);
+  }
   calcBallRect(pen);
+}
+
+function beforeValue(pen: formPen, value: any) {
+  pen.calculative.isUpdateData = false;
+
+  if (value.textWidth || value.barHeight) {
+    if (value.textWidth) {
+      pen._textWidth = 0;
+    }
+    pen.calculative.isUpdateData = true;
+  }
+
+  return value;
 }

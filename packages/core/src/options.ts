@@ -33,21 +33,14 @@ export interface Options {
   disableRotate?: boolean;
   disableSize?: boolean;
   disableAnchor?: boolean;
-  // disableWidth?: boolean;
-  // disableHeight?: boolean;
-  // alwaysAnchor?: boolean;  TODO: 该功能实现待考虑
   autoAnchor?: boolean;
   disableEmptyLine?: boolean;
   disableRepeatLine?: boolean;
   disableScale?: boolean;
   disableTranslate?: boolean;
-  // disableMoveOutParent?: boolean;
-  disableDockLine?: boolean;
-  // playIcon?: string;
-  // pauseIcon?: string;
-  // fullScreenIcon?: string;
-  // loopIcon?: string;
-  // rightMouseTranslate?: boolean;  // TODO: 该功能实现待考虑
+  disableDock?: boolean; // 禁止所有停靠辅助线
+  disableLineDock?: boolean; // 禁止移动连线时出现辅助线
+  moveConnectedLine?: boolean; // 是否能移动被连接的连线
   minScale?: number;
   maxScale?: number;
   keydown?: KeydownType;
@@ -73,6 +66,10 @@ export interface Options {
   ruleLineColor?: string;
   defaultAnchors?: Point[]; // 图形的默认瞄点
   measureTextWidth?: boolean; // 测量文字宽度
+  mouseRightActive?: boolean; //是否允许右键选中节点
+  disableClipboard?: boolean; //是否禁止系统剪切板
+  drawingLineLength?: number; //绘制过程中允许的最大长度，0表示不限
+  disableTouchPadScale?: boolean; //是否禁止触控板缩放
 }
 
 export const defaultOptions: Options = {
@@ -126,4 +123,9 @@ export const defaultOptions: Options = {
     },
   ],
   measureTextWidth: true,
+  moveConnectedLine: true,
+  mouseRightActive: true,
+  disableClipboard: false,
+  drawingLineLength: 0,
+  disableTouchPadScale: false,
 };

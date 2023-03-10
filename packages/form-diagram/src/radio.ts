@@ -5,6 +5,10 @@ import { Point } from '../../core/src/point';
 export function radio(ctx: CanvasRenderingContext2D, pen: formPen) {
   if (!pen.onAdd) {
     pen.onAdd = onAdd;
+    if (!pen.optionPos) {
+      pen.onAdd(pen);
+      pen.calculative.canvas.parent.active([pen]);
+    }
     pen.onMouseDown = onMousedown;
     pen.onValue = onValue;
   }
@@ -24,8 +28,9 @@ export function radio(ctx: CanvasRenderingContext2D, pen: formPen) {
       ctx.arc(x + gap + h / 2, y + h / 2, h / 2, 0, Math.PI * 2);
       ctx.strokeStyle = '#d9d9d9';
       ctx.fillStyle = '#ffffff00';
-      if (pen.options[i].isChecked) {
-        ctx.strokeStyle = pen.options[i].background || '#1890ff';
+      if (pen.options[i].text === pen.checked) {
+        ctx.strokeStyle =
+          pen.options[i].background || pen.background || '#1890ff';
       }
       if (isForbidden) {
         ctx.fillStyle = '#ebebeb';
@@ -35,16 +40,17 @@ export function radio(ctx: CanvasRenderingContext2D, pen: formPen) {
       ctx.fill();
       ctx.stroke();
       ctx.save();
-      if (!isForbidden && pen.options[i].isChecked) {
+      if (!isForbidden && pen.options[i].text === pen.checked) {
         ctx.beginPath();
         ctx.strokeStyle = pen.options[i].background
           ? pen.options[i].background + '20'
-          : '#1890ff20';
+          : pen.background || '#1890ff20';
         ctx.arc(x + h / 2 + gap, y + h / 2, h / 2 + 1.5, 0, Math.PI * 2);
         ctx.stroke();
         ctx.closePath();
         ctx.beginPath();
-        ctx.fillStyle = pen.options[i].background || '#1890ff';
+        ctx.fillStyle =
+          pen.options[i].background || pen.background || '#1890ff';
         ctx.arc(x + h / 2 + gap, y + h / 2, h / 4, 0, Math.PI * 2);
         ctx.fill();
         ctx.closePath();
@@ -53,7 +59,9 @@ export function radio(ctx: CanvasRenderingContext2D, pen: formPen) {
 
       //文字
       ctx.save();
-      ctx.fillStyle = isForbidden ? '#00000040' : '#000000d9';
+      ctx.fillStyle = isForbidden
+        ? '#00000040'
+        : pen.textColor || pen.color || '#000000d9';
       const textScale = (pen.calculative.worldRect.height * 14) / 16;
 
       ctx.textAlign = 'start';
@@ -88,7 +96,7 @@ export function radio(ctx: CanvasRenderingContext2D, pen: formPen) {
       );
       ctx.strokeStyle = '#d9d9d9';
       ctx.fillStyle = '#ffffff00';
-      if (pen.options[i].isChecked) {
+      if (pen.options[i].text === pen.checked) {
         ctx.strokeStyle = pen.options[i].background || '#1890ff';
       }
       if (isForbidden) {
@@ -99,7 +107,7 @@ export function radio(ctx: CanvasRenderingContext2D, pen: formPen) {
       ctx.fill();
       ctx.stroke();
       ctx.save();
-      if (!isForbidden && pen.options[i].isChecked) {
+      if (!isForbidden && pen.options[i].text === pen.checked) {
         ctx.beginPath();
         ctx.strokeStyle = pen.options[i].background
           ? pen.options[i].background + '20'
@@ -173,17 +181,18 @@ function onMousedown(pen: formPen, e: Point) {
             getTextLength(pen.options[i].text, pen) +
             (10 / pen.checkboxWidth) * pen.calculative.worldRect.width
       ) {
-        pen.options[i].isChecked = true;
+        // pen.options[i].isChecked = true;
+        pen.checked = pen.options[i].text;
         checkedIndex = i;
       }
     }
-    if (checkedIndex !== -1) {
-      pen.options.forEach((item: any, index: number) => {
-        if (index !== checkedIndex) {
-          item.isChecked = false;
-        }
-      });
-    }
+    // if (checkedIndex !== -1) {
+    //   pen.options.forEach((item: any, index: number) => {
+    //     if (index !== checkedIndex) {
+    //       item.isChecked = false;
+    //     }
+    //   });
+    // }
   } else if (pen.direction == 'vertical') {
     const scaleY = pen.calculative.worldRect.height / pen.checkboxHeight;
     let checkedIndex = -1;
@@ -195,18 +204,19 @@ function onMousedown(pen: formPen, e: Point) {
           pen.calculative.worldRect.y +
             (pen.optionPos[i] + pen.optionHeight) * scaleY
       ) {
-        pen.options[i].isChecked = true;
+        // pen.options[i].isChecked = true;
+        pen.checked = pen.options[i].text;
         checkedIndex = i;
       }
     }
 
-    if (checkedIndex !== -1) {
-      pen.options.forEach((item: any, index: number) => {
-        if (index !== checkedIndex) {
-          item.isChecked = false;
-        }
-      });
-    }
+    // if (checkedIndex !== -1) {
+    //   pen.options.forEach((item: any, index: number) => {
+    //     if (index !== checkedIndex) {
+    //       item.isChecked = false;
+    //     }
+    //   });
+    // }
   }
   pen.calculative.canvas.render();
 }
