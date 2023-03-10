@@ -3,6 +3,7 @@ import {
   ctxRotate,
   drawImage,
   Pen,
+  renderPen,
   setGlobalAlpha,
   getParent,
 } from '../pen';
