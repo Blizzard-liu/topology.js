@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import {
   ctxFlip,
   ctxRotate,
@@ -8,10 +7,6 @@ import {
   getParent,
 } from '../pen';
 import { Meta2dStore } from '../store';
-=======
-import { ctxFlip, ctxRotate, drawImage, renderPen, Pen, setGlobalAlpha } from '../pen';
-import { TopologyStore } from '../store';
->>>>>>> sw
 import { rgba } from '../utils';
 import { createOffscreen } from './offscreen';
 
