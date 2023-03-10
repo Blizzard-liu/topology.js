@@ -624,9 +624,10 @@ export class Canvas {
           // TODO: ctrl + A 会选中 visible == false 的元素
           this.active(
             this.store.data.pens.filter(
-              (pen) => !pen.parentId && pen.locked !== LockState.Disable
+              (pen) => !pen.parentId && pen.locked !== LockState.Disable && !pen.sw_custom_bg
             )
           );
+          // this.active(this.store.data.pens.filter((pen) => !pen.parentId && !pen.sw_custom_bg));
           e.preventDefault();
         } else {
           this.toggleAnchorMode();
@@ -963,6 +964,8 @@ export class Canvas {
           width: img.width,
           height: img.height,
           name: isGif ? 'gif' : 'image',
+          disableInput: true,
+          imageRatio: true,
           image: url,
         });
       };
@@ -2349,6 +2352,9 @@ export class Canvas {
   }
 
   private hasImage(pen: Pen, isBottom: boolean): boolean {
+    if(pen.sw_custom_bg && !pen.image && isBottom) {
+      return true
+    }
     if (pen.image && pen.name !== 'gif' && !pen.isBottom == !isBottom) {
       return true;
     }
@@ -3653,6 +3659,9 @@ export class Canvas {
     ctx.strokeStyle = getGlobalColor(this.store);
 
     for (const pen of this.store.data.pens) {
+      if(pen.sw_custom_bg) {
+        continue
+      }
       if (!isFinite(pen.x)) {
         continue;
       }
@@ -3960,6 +3969,53 @@ export class Canvas {
       }
     }
   }
+    /**
+   * 重置画布到原点(0,0)
+   */
+     reset() {
+      let scale = 1;
+      let center = { x: 0, y: 0 }
+  
+      this.calibrateMouse(center);
+      const s = scale / this.store.data.scale;
+      this.store.data.scale = scale;
+      this.store.data.center = center;
+  
+      scalePoint(this.store.data.origin, s, center);
+      this.store.data.pens.forEach((pen) => {
+        if (pen.parentId) {
+          return;
+        }
+        scalePen(pen, s, center);
+        if (pen.isRuleLine) {
+          // 扩大线的比例，若是放大，即不缩小，若是缩小，会放大
+          const lineScale = s > 1 ? 1 : 1 / s / s;
+          // 中心点即为线的中心
+          const lineCenter = pen.calculative.worldRect.center;
+          if (!pen.width) {
+            // 垂直线
+            scalePen(pen, lineScale, lineCenter);
+          } else if (!pen.height) {
+            // 水平线
+            scalePen(pen, lineScale, lineCenter);
+          }
+        }
+        this.updatePenRect(pen, { worldRectIsReady: true });
+        this.execPenResize(pen);
+      });
+      this.calcActiveRect();
+      
+      const map = this.parent.map;
+      if (map && map.isShow) {
+        map.setView();
+      }
+      this.store.emitter.emit('scale', this.store.data.scale);
+
+      let x = 0 - (this.store.data.x + this.store.data.origin.x)
+      let y = 0 - (this.store.data.y + this.store.data.origin.y)
+      this.translate(x,y)
+
+    }
 
   /**
    * 缩放整个画布

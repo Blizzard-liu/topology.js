@@ -243,22 +243,73 @@ export class Meta2d {
       }
       console.warn('[meta2d] StopVideo event value is not a string');
     };
+    this.events[EventAction.StartVideo] = (pen: Pen, e: Event) => {
+      if (!e.value || typeof e.value === 'string') {
+        this.startVideo((e.value as string) || [pen]);
+        return;
+      }
+      console.warn('[topology] StartVideo value is not a string');
+    };
+    this.events[EventAction.PauseVideo] = (pen: Pen, e: Event) => {
+      if (!e.value || typeof e.value === 'string') {
+        this.pauseVideo((e.value as string) || [pen]);
+        return;
+      }
+      console.warn('[topology] PauseVideo value is not a string');
+    };
+    this.events[EventAction.StopVideo] = (pen: Pen, e: Event) => {
+      if (!e.value || typeof e.value === 'string') {
+        this.stopVideo((e.value as string) || [pen]);
+        return;
+      }
+      console.warn('[topology] StopVideo event value is not a string');
+    };
     this.events[EventAction.Function] = (pen: Pen, e: Event) => {
+      try {
+      let customTags = pen.customTags || []
+      customTags = customTags.filter(el => !(el.value === '' &&  el.key === '') ) //过滤掉key,value都是空的情况
       if (e.value && !e.fn) {
-        try {
+        
           if (typeof e.value !== 'string') {
             throw new Error('[meta2d] Function value must be string');
           }
-          const fnJs = e.value;
-          e.fn = new Function('pen', 'params', fnJs) as (
+          // TODO: 编译 string.replaceAll 报错
+        
+        customTags.forEach((el) => {
+          if (el.key == '') {
+            el.key = el.value
+          }
+        })
+        const keys = customTags.map((el) => el.key)
+
+          let value: any = e.value;
+          value = value.replace(/pen./g, "this.");
+          
+          const fnJs = value.replaceAll
+            ? value.replaceAll('.setValue(', '._setValue(')
+            : value.replace(/.setValue\(/g, '._setValue(');
+          e.fn = new Function('res','$SYS','$area_id','$module_id','$behavior', ...keys, fnJs) as (
             pen: Pen,
             params: string
           ) => void;
-        } catch (err) {
-          console.error('[meta2d]: Error on make a function:', err);
-        }
+        
       }
-      e.fn?.(pen, e.params);
+      const {sysName, area_id, module_id, behavior } = this.store.data;
+      let sw = sessionStorage.getItem('sys_name') || ''
+      
+      let sys_name = pen.sysName || sysName || sw 
+      sys_name = sys_name.toLowerCase()
+      const values = customTags.map((el) => el.value)
+      // console.log(customTags,values)
+
+      let res = sessionStorage.getItem('WS_DATA') || '[]'
+      res = JSON.parse(res)
+
+      e.fn?.call(pen,res, sys_name, area_id, module_id, behavior , ...values);
+
+    } catch (err) {
+      console.error('[meta2d]: Error on make a function:', err);
+    }
     };
     this.events[EventAction.GlobalFn] = (pen: Pen, e: Event) => {
       if (typeof e.value !== 'string') {
@@ -1008,6 +1059,9 @@ export class Meta2d {
 
   scale(scale: number, center = { x: 0, y: 0 }) {
     this.canvas.scale(scale, center);
+  }
+  reset() {
+    this.canvas.reset();
   }
 
   translate(x: number, y: number) {
@@ -2061,7 +2115,8 @@ export class Meta2d {
       const pen = allPens[i];
       const index = pens.findIndex((p: Pen) => p.id === pen.id);
       if (index > -1) {
-        pens.unshift(pens[index]);
+        // pens.unshift(pens[index]);
+        pens.splice(1, 0, pens[index]);
         pens.splice(index + 1, 1);
         this.initImageCanvas([pen]);
       }
@@ -2088,7 +2143,7 @@ export class Meta2d {
    */
   down(pen: Pen, pens: Pen[] = this.store.data.pens) {
     const index = pens.findIndex((p: Pen) => p.id === pen.id);
-    if (index > -1 && index !== 0) {
+    if (index > -1 && index !== 1) {
       pens.splice(index - 1, 0, pens[index]);
       pens.splice(index + 1, 1);
       this.initImageCanvas([pen]);
@@ -2435,48 +2490,21 @@ export class Meta2d {
       children: [],
       showChild,
     };
-
-    if (anchor) {
-      parent.anchors = [
-        {
-          id: '0',
-          penId: parent.id,
-          x: 0.5,
-          y: 0,
-        },
-        {
-          id: '1',
-          penId: parent.id,
-          x: 1,
-          y: 0.5,
-        },
-        {
-          id: '2',
-          penId: parent.id,
-          x: 0.5,
-          y: 1,
-        },
-        {
-          id: '3',
-          penId: parent.id,
-          x: 0,
-          y: 0.5,
-        },
-      ];
-    }
-    const p = components.find((pen) => {
-      return pen.width === rect.width && pen.height === rect.height;
-    });
-    const oneIsParent = p && showChild === undefined;
-    if (oneIsParent) {
-      if (!p.children) {
-        p.children = [];
-      }
-      parent = p;
-    } else {
-      // 不影响画布数据，生成一个组合图形便于二次复用
-      // this.canvas.makePen(parent);
-    }
+    // const p = components.find((pen) => {
+    //   return pen.width === rect.width && pen.height === rect.height;
+    // });
+    // const oneIsParent = p && showChild === undefined;
+    const oneIsParent =  undefined;
+    // console.log('toComponent >>> ',{components},{parent},{rect},{oneIsParent})
+    // if (oneIsParent) {
+    //   if (!p.children) {
+    //     p.children = [];
+    //   }
+    //   parent = p;
+    // } else {
+    //   // 不影响画布数据，生成一个组合图形便于二次复用
+    //   // this.canvas.makePen(parent);
+    // }
 
     components.forEach((pen) => {
       if (pen === parent || pen.parentId === parent.id) {

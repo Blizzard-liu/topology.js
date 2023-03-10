@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import {
   ctxFlip,
   ctxRotate,
@@ -7,6 +8,10 @@ import {
   getParent,
 } from '../pen';
 import { Meta2dStore } from '../store';
+=======
+import { ctxFlip, ctxRotate, drawImage, renderPen, Pen, setGlobalAlpha } from '../pen';
+import { TopologyStore } from '../store';
+>>>>>>> sw
 import { rgba } from '../utils';
 import { createOffscreen } from './offscreen';
 
@@ -104,6 +109,11 @@ export class CanvasImage {
   }
 
   hasImage(pen: Pen) {
+    if(pen.sw_custom_bg && !pen.image && this.isBottom) {
+      return true
+    }
+    // console.log(!pen.isBottom == !this.isBottom,pen.image,!pen.isBottom,!this.isBottom)
+    
     pen.calculative.hasImage =
       pen.calculative &&
       pen.calculative.inView &&
@@ -143,6 +153,7 @@ export class CanvasImage {
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         ctx.restore();
       }
+
       this.renderGrid(ctx);
     }
 
@@ -158,6 +169,13 @@ export class CanvasImage {
       ctx.save();
       ctx.translate(this.store.data.x, this.store.data.y);
       for (const pen of this.store.data.pens) {
+        if(pen.sw_custom_bg && !pen.image && this.isBottom && !pen.calculative.imageDrawed)  {
+          // console.log(111,this.store.data.pens)
+          const ctx2 = this.offscreen.getContext('2d') as CanvasRenderingContext2D;
+          pen.calculative.imageDrawed = true;
+          renderPen(ctx2, pen);
+          continue
+        }
         if (
           !pen.calculative.hasImage ||
           pen.calculative.imageDrawed ||
@@ -168,6 +186,7 @@ export class CanvasImage {
         }
         pen.calculative.imageDrawed = true;
         ctx.save();
+        
         ctxFlip(ctx, pen);
         if (pen.calculative.rotate) {
           ctxRotate(ctx, pen);
@@ -264,6 +283,19 @@ export class CanvasImage {
       }
     }
   }
+
+  renderSW(
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
+  ) {
+    const { data, options } = this.store;
+    const { grid, gridRotate, gridColor, gridSize, scale } = data;
+    ctx.save();
+    ctx.fillStyle = "rgb(200,0,0)";
+    ctx.fillRect(0, 0, 100, 100);
+    ctx.restore();
+
+  }
+
 
   renderGrid(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
