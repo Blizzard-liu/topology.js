@@ -248,21 +248,21 @@ export class Meta2d {
         this.startVideo((e.value as string) || [pen]);
         return;
       }
-      console.warn('[topology] StartVideo value is not a string');
+      console.warn('[meta2d] StartVideo value is not a string');
     };
     this.events[EventAction.PauseVideo] = (pen: Pen, e: Event) => {
       if (!e.value || typeof e.value === 'string') {
         this.pauseVideo((e.value as string) || [pen]);
         return;
       }
-      console.warn('[topology] PauseVideo value is not a string');
+      console.warn('[meta2d] PauseVideo value is not a string');
     };
     this.events[EventAction.StopVideo] = (pen: Pen, e: Event) => {
       if (!e.value || typeof e.value === 'string') {
         this.stopVideo((e.value as string) || [pen]);
         return;
       }
-      console.warn('[topology] StopVideo event value is not a string');
+      console.warn('[meta2d] StopVideo event value is not a string');
     };
     this.events[EventAction.Function] = (pen: Pen, e: Event) => {
       try {
