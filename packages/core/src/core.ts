@@ -26,6 +26,7 @@ import {
   setChildValue,
   FormItem,
   BindId,
+  isAncestor,
 } from './pen';
 import { Point, rotatePoint } from './point';
 import {
@@ -47,7 +48,13 @@ import {
   valueInArray,
   valueInRange,
 } from './utils';
-import { calcCenter, calcRelativeRect, getRect, Rect } from './rect';
+import {
+  calcCenter,
+  calcRelativeRect,
+  getRect,
+  Rect,
+  rectInRect,
+} from './rect';
 import { deepClone } from './utils/clone';
 import { Event, EventAction, EventName } from './event';
 import { ViewMap } from './map';
@@ -243,28 +250,8 @@ export class Meta2d {
       }
       console.warn('[meta2d] StopVideo event value is not a string');
     };
-    this.events[EventAction.StartVideo] = (pen: Pen, e: Event) => {
-      if (!e.value || typeof e.value === 'string') {
-        this.startVideo((e.value as string) || [pen]);
-        return;
-      }
-      console.warn('[meta2d] StartVideo value is not a string');
-    };
-    this.events[EventAction.PauseVideo] = (pen: Pen, e: Event) => {
-      if (!e.value || typeof e.value === 'string') {
-        this.pauseVideo((e.value as string) || [pen]);
-        return;
-      }
-      console.warn('[meta2d] PauseVideo value is not a string');
-    };
-    this.events[EventAction.StopVideo] = (pen: Pen, e: Event) => {
-      if (!e.value || typeof e.value === 'string') {
-        this.stopVideo((e.value as string) || [pen]);
-        return;
-      }
-      console.warn('[meta2d] StopVideo event value is not a string');
-    };
-    this.events[EventAction.Function] = (pen: Pen, e: Event) => {
+
+    this.events[EventAction.JS] = (pen: Pen, e: Event) => {
       try {
       let customTags = pen.customTags || []
       customTags = customTags.filter(el => !(el.value === '' &&  el.key === '') ) //过滤掉key,value都是空的情况
@@ -340,7 +327,7 @@ export class Meta2d {
           }
         }
         value.id = _pen.id;
-        this.doSendDataEvent(value);
+        this.doSendDataEvent(value, e.extend);
         return;
       }
       console.warn('[meta2d] SendPropData value is not an object');
@@ -367,22 +354,31 @@ export class Meta2d {
           }
           array.push(obj);
         }
-        this.doSendDataEvent(array);
+        this.doSendDataEvent(array, e.extend);
         return;
       }
       console.warn('[meta2d] SendVarData value is not an object');
     };
   }
 
-  doSendDataEvent(value: any) {
+  doSendDataEvent(value: any, topics?: string) {
     let data = JSON.stringify(value);
     if (this.mqttClient && this.mqttClient.connected) {
-      this.mqttClient.publish(this.store.data.mqttTopics, data);
+      if (topics) {
+        topics.split(',').forEach((topic) => {
+          this.mqttClient.publish(topic, data);
+        });
+      } else {
+        this.store.data.mqttTopics &&
+          this.store.data.mqttTopics.split(',').forEach((topic) => {
+            this.mqttClient.publish(topic, data);
+          });
+      }
     }
     if (this.websocket && this.websocket.readyState === 1) {
       this.websocket.send(data);
     }
-    if (this.store.data.http) {
+    if (this.store.data.https || this.store.data.http) {
       this.sendDatabyHttp(data);
     }
     this.store.emitter.emit('sendData', data);
@@ -419,6 +415,12 @@ export class Meta2d {
       return new Promise<HTMLImageElement>((resolve) => {
         const img = new Image();
         img.src = url;
+        if (
+          this.store.options.cdn &&
+          !(url.startsWith('http') || url.startsWith('//'))
+        ) {
+          img.src = this.store.options.cdn + url;
+        }
         img.crossOrigin = 'anonymous';
         img.onload = () => {
           resolve(img);
@@ -574,7 +576,7 @@ export class Meta2d {
     if (lock === 0) {
       //恢复可选状态
       this.store.data.pens.forEach((pen) => {
-        if (pen.name === 'echarts') {
+        if (pen.externElement === true) {
           pen.onMove && pen.onMove(pen);
         }
       });
@@ -832,6 +834,7 @@ export class Meta2d {
       this.store.animates.delete(pen);
       this.canvas.restoreNodeAnimate(pen);
       this.canvas.updateLines(pen);
+      this.store.animateMap.delete(pen);
     });
     this.initImageCanvas(pens);
     setTimeout(() => {
@@ -1241,16 +1244,32 @@ export class Meta2d {
   }
 
   async sendDatabyHttp(data: string) {
-    const { http, httpHeaders } = this.store.data;
-    if (http) {
-      // 默认每一秒请求一次
-      const res: Response = await fetch(http, {
-        method: 'post',
-        body: data,
-        headers: httpHeaders,
+    const { https } = this.store.data;
+    if (https) {
+      https.forEach(async (item) => {
+        if (item.http) {
+          const res: Response = await fetch(item.http, {
+            method: 'post',
+            body: data,
+            headers: item.httpHeaders,
+          });
+          if (res.ok) {
+            console.info('http消息发送成功');
+          }
+        }
       });
-      if (res.ok) {
-        console.info('http消息发送成功');
+    } else {
+      const { http, httpHeaders } = this.store.data;
+      if (http) {
+        // 默认每一秒请求一次
+        const res: Response = await fetch(http, {
+          method: 'post',
+          body: data,
+          headers: httpHeaders,
+        });
+        if (res.ok) {
+          console.info('http消息发送成功');
+        }
       }
     }
   }
@@ -1719,6 +1738,46 @@ export class Meta2d {
     this.centerView();
   }
 
+  /**
+   * 宽度放大到屏幕尺寸，并滚动到最顶部
+   *
+   */
+  scrollView(viewPadding: Padding = 10) {
+    if (!this.hasView()) return;
+    //滚动状态下
+    if (!this.canvas.scroll) {
+      return;
+    }
+    const { canvas } = this.canvas;
+    const { offsetWidth: width, offsetHeight: height } = canvas;
+    this.resize(width, height);
+    const padding = formatPadding(viewPadding);
+    const rect = this.getRect();
+    const ratio = (width - padding[1] - padding[3]) / rect.width;
+    this.scale(ratio * this.store.data.scale);
+
+    this.topView(padding[0]);
+  }
+
+  topView(paddingTop: number = 10) {
+    if (!this.hasView()) return;
+    const rect = this.getRect();
+    const viewCenter = this.getViewCenter();
+    const pensRect: Rect = this.getPenRect(rect);
+    calcCenter(pensRect);
+    const { center } = pensRect;
+    const { scale, origin, x: dataX, y: dataY } = this.store.data;
+
+    this.translate(
+      (viewCenter.x - origin.x) / scale - center.x - dataX / scale,
+      (paddingTop - origin.y) / scale - pensRect.y - dataY / scale
+    );
+    const { canvas } = this.canvas;
+    const x = (canvas.scrollWidth - canvas.offsetWidth) / 2;
+    const y = (canvas.scrollHeight - canvas.offsetHeight) / 2;
+    canvas.scrollTo(x, y);
+  }
+
   centerView() {
     if (!this.hasView()) return;
     const rect = this.getRect();
@@ -2121,6 +2180,62 @@ export class Meta2d {
         this.initImageCanvas([pen]);
       }
     }
+  }
+
+  /**
+   * data.pens 决定了绘制顺序，即越后面的越在上层
+   * 该方法通过区域重叠计算，找出该画笔之后第一个与其重叠的画笔，然后把该画笔放到找出的画笔之后
+   * @param pen 画笔
+   */
+  upByArea(pen: Pen) {
+    const index = this.store.data.pens.findIndex((p) => p.id === pen.id);
+    if (index === -1) {
+      // 画笔不在画布上，不处理
+      console.warn('upByArea: pen not in canvas');
+      return;
+    }
+    const allPens = [pen, ...getAllChildren(pen, this.store)];
+    let allIndexs = allPens.map((p) =>
+      this.store.data.pens.findIndex((p2) => p2.id === p.id)
+    );
+
+    if (allIndexs.includes(-1)) {
+      // 画笔不在画布上，脏数据
+      console.warn('upByArea: pen children not in canvas');
+      allIndexs = allIndexs.filter((i) => i !== -1);
+    }
+
+    const minIndex = Math.min(...allIndexs);
+    const penRect = pen.calculative.worldRect;
+    const nextHitIndex = this.store.data.pens.findIndex((p, i) => {
+      if (i <= minIndex) {
+        // 不考虑前面的
+        return false;
+      }
+      if (p.id === pen.id || isAncestor(p, pen)) {
+        // 不考虑后代和自身
+        return false;
+      }
+      const currentRect = p.calculative.worldRect;
+      return rectInRect(penRect, currentRect);
+    });
+
+    if (nextHitIndex === -1) {
+      this.up(pen);
+      return;
+    }
+
+    this.store.data.pens.splice(nextHitIndex + 1, 0, ...allPens);
+
+    // 删除靠前的 allPens
+    for (const pen of allPens) {
+      const index = this.store.data.pens.findIndex((p) => p.id === pen.id);
+      if (index > -1) {
+        this.store.data.pens.splice(index, 1);
+      }
+    }
+
+    this.initImageCanvas([pen]);
   }
 
   /**
