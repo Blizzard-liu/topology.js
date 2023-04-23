@@ -814,10 +814,10 @@ function drawText(ctx: CanvasRenderingContext2D, pen: Pen) {
     ctx.shadowOffsetY = 0;
   }
   let fill: string = undefined;
-  if (pen.calculative.hover) {
-    fill = pen.hoverTextColor || pen.hoverColor || store.options.hoverColor;
+  if (pen.calculative.hover && (pen.hoverTextColor || pen.hoverColor)) {
+    fill = pen.hoverTextColor || pen.hoverColor || store.options.hoverColor; //hover 更改
   } else if (pen.calculative.active) {
-    fill = pen.activeTextColor || pen.activeColor || store.options.activeColor;
+    fill = pen.activeTextColor || pen.activeColor  || store.options.activeColor;
   }
   ctx.fillStyle = fill || getTextColor(pen, store);
 
