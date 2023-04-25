@@ -1700,6 +1700,7 @@ export function calcWorldRects(pen: Pen) {
     calcCenter(rect);
   } else {
     const parent = store.pens[pen.parentId];
+    if(!parent) return
     let parentRect = parent.calculative.worldRect;
     if (!parentRect) {
       parentRect = calcWorldRects(parent);
