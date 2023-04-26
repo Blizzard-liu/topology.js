@@ -289,7 +289,7 @@ export class Meta2d {
       const values = customTags.map((el) => el.value)
       // console.log(customTags,values)
 
-      let res = sessionStorage.getItem('WS_DATA') || '[]'
+      let res = sessionStorage.getItem('WS_DATA') || '{}'
       res = JSON.parse(res)
 
       e.fn?.call(pen,res, sys_name, area_id, module_id, behavior , ...values);
