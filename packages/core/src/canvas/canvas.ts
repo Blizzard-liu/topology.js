@@ -743,14 +743,14 @@ export class Canvas {
         break;
       case 'v':
       case 'V':
-        if (!e.ctrlKey && !e.metaKey) {
-          if (this.drawingLineName) {
-            this.finishDrawline();
-            this.drawingLineName = '';
-          } else {
-            this.drawingLineName = this.store.options.drawingLineName;
-          }
-        }
+        // if (!e.ctrlKey && !e.metaKey) {
+        //   if (this.drawingLineName) {
+        //     this.finishDrawline();
+        //     this.drawingLineName = '';
+        //   } else {
+        //     this.drawingLineName = this.store.options.drawingLineName;
+        //   }
+        // }
         if ((e.ctrlKey || e.metaKey) && this.store.options.disableClipboard) {
           this.paste();
         }
@@ -758,7 +758,7 @@ export class Canvas {
         break;
       case 'b':
       case 'B':
-        this.drawingPencil();
+        // this.drawingPencil();
         break;
       case 'y':
       case 'Y':
