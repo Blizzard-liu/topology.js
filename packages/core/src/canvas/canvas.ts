@@ -3475,7 +3475,11 @@ export class Canvas {
             img.src = pen.image;
             if (
               this.store.options.cdn &&
-              !(pen.image.startsWith('http') || pen.image.startsWith('//'))
+              !(
+                pen.image.startsWith('http') ||
+                pen.image.startsWith('//') ||
+                pen.image.startsWith('data:image')
+              )
             ) {
               img.src = this.store.options.cdn + pen.image;
             }
@@ -3508,7 +3512,8 @@ export class Canvas {
             this.store.options.cdn &&
             !(
               pen.backgroundImage.startsWith('http') ||
-              pen.backgroundImage.startsWith('//')
+              pen.backgroundImage.startsWith('//') ||
+              pen.backgroundImage.startsWith('data:image')
             )
           ) {
             img.src = this.store.options.cdn + pen.backgroundImage;
@@ -3537,10 +3542,11 @@ export class Canvas {
             this.store.options.cdn &&
             !(
               pen.strokeImage.startsWith('http') ||
-              pen.strokeImage.startsWith('//')
+              pen.strokeImage.startsWith('//') ||
+              pen.strokeImage.startsWith('data:image')
             )
           ) {
-            img.src = this.store.options.cdn+ pen.strokeImage;
+            img.src = this.store.options.cdn + pen.strokeImage;
           }
           img.onload = () => {
             pen.calculative.strokeImg = img;
@@ -5804,6 +5810,13 @@ export class Canvas {
     // sheet.insertRule(`.meta2d-input .input-div-font{${style_font}}`);
   };
 
+  convertSpecialCharacter(str) {
+    var arrEntities = { lt: '<', gt: '>', nbsp: ' ', amp: '&', quot: '"' };
+    return str.replace(/&(lt|gt|nbsp|amp|quot);/gi, function (all, t) {
+      return arrEntities[t];
+    });
+  }
+
   hideInput = () => {
     if (this.inputParent.style.display === 'flex') {
       this.inputParent.style.display = 'none';
@@ -5818,6 +5831,9 @@ export class Canvas {
         .replace(/\<br\>/g, '')
         .replace(/&nbsp;/g, ' ')
         .replace(/(<([^>]+)>)/gi, '');
+      this.inputDiv.dataset.value = this.convertSpecialCharacter(
+        this.inputDiv.dataset.value
+      );
       if (pen.onInput) {
         pen.onInput(pen, this.inputDiv.dataset.value);
       } else if (pen.text !== this.inputDiv.dataset.value) {

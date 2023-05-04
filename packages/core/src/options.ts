@@ -1,4 +1,4 @@
-import { TextAlign, TextBaseline } from './pen';
+import { TextAlign, TextBaseline, Pen } from './pen';
 import { Point } from './point';
 
 export enum KeydownType {
@@ -71,6 +71,12 @@ export interface Options {
   drawingLineLength?: number; //绘制过程中允许的最大长度，0表示不限
   disableTouchPadScale?: boolean; //是否禁止触控板缩放
   cdn?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  polylineSpace?: number;
+  defaultFormat?: Pen; //默认格式刷
 }
 
 export const defaultOptions: Options = {
@@ -130,4 +136,5 @@ export const defaultOptions: Options = {
   drawingLineLength: 0,
   disableTouchPadScale: false,
   cdn: '',
+  polylineSpace: 10,
 };
