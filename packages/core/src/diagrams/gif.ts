@@ -53,8 +53,17 @@ export function gif(pen: Pen): Path2D {
 }
 
 function destory(pen: Pen) {
-  gifsList[pen.id].remove();
-  gifsList[pen.id] = undefined;
+  let el = gifsList[pen.id]
+  try {
+    el.parentNode.removeChild(el);
+    gifsList[pen.id] = undefined;
+
+    // gifsList[pen.id].remove();
+    // gifsList[pen.id] = undefined;
+  } catch (error) {
+    console.error(error)
+  }
+ 
 }
 
 function move(pen: Pen) {
