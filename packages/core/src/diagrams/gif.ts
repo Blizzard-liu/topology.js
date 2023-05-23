@@ -24,16 +24,16 @@ export function gif(pen: Pen): Path2D {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = pen.image;
-    if (
-      pen.calculative.canvas.parent.store.options.cdn &&
-      !(
-        pen.image.startsWith('http') ||
-        pen.image.startsWith('//') ||
-        pen.image.startsWith('data:image')
-      )
-    ) {
-      img.src = pen.calculative.canvas.parent.store.options.cdn + pen.image;
-    }
+    // if (
+    //   pen.calculative.canvas.parent.store.options.cdn &&
+    //   !(
+    //     pen.image.startsWith('http') ||
+    //     pen.image.startsWith('//') ||
+    //     pen.image.startsWith('data:image')
+    //   )
+    // ) {
+    //   img.src = pen.calculative.canvas.parent.store.options.cdn + pen.image;
+    // }
     gifsList[pen.id] = img; // 提前赋值，避免重复创建
     gif_z_index++;
     pen.calculative.zIndex = gif_z_index;
@@ -54,17 +54,21 @@ export function gif(pen: Pen): Path2D {
 
 function destory(pen: Pen) {
 
-  gifsList[pen.id].remove();
-  gifsList[pen.id] = undefined;
+  // gifsList[pen.id].remove();
+  // gifsList[pen.id] = undefined;
 
 
-  // let el = gifsList[pen.id]
-  // try {
-  //   el.parentNode.removeChild(el);
-  //   gifsList[pen.id] = undefined;
-  // } catch (error) {
-  //   console.error(error)
-  // }
+  let el = gifsList[pen.id]
+  try {
+    el.parentNode.removeChild(el);
+    gifsList[pen.id] = undefined;
+  } catch (error) {
+    let t = setTimeout(() => {
+      el.remove();
+      clearTimeout(t)
+    }, 0);
+    // console.log(error)
+  }
  
 }
 
