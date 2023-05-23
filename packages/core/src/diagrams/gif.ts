@@ -64,7 +64,7 @@ function destory(pen: Pen) {
     gifsList[pen.id] = undefined;
   } catch (error) {
     let t = setTimeout(() => {
-      el.remove();
+      el && el.remove();
       clearTimeout(t)
     }, 0);
     // console.log(error)
