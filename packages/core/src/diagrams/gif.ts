@@ -34,6 +34,7 @@ export function gif(pen: Pen): Path2D {
     // ) {
     //   img.src = pen.calculative.canvas.parent.store.options.cdn + pen.image;
     // }
+    img.id = 'gif_' + pen.id;
     gifsList[pen.id] = img; // 提前赋值，避免重复创建
     gif_z_index++;
     pen.calculative.zIndex = gif_z_index;
@@ -45,6 +46,7 @@ export function gif(pen: Pen): Path2D {
       setImagePosition(pen, img);
     };
   }
+
 
   if (pen.calculative.patchFlags && gifsList[pen.id]) {
     setImagePosition(pen, gifsList[pen.id]);
@@ -67,7 +69,12 @@ function destory(pen: Pen) {
       el && el.remove();
       clearTimeout(t)
     }, 0);
-    // console.log(error)
+    let ids = sessionStorage.getItem('GIF_ID_LIST') || '[]'
+     ids = JSON.parse(ids)
+     ids.push(el.id)
+     sessionStorage.setItem('GIF_ID_LIST',JSON.stringify(ids))
+
+    // console.error(error)
   }
  
 }
