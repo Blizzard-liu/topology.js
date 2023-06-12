@@ -5743,7 +5743,7 @@ export class Canvas {
     let _textWidth = null;
     if (pen.textWidth) {
       _textWidth =
-        (pen.textWidth < 1 && pen.textWidth) > -1
+        pen.textWidth < 1 && pen.textWidth > -1
           ? pen.textWidth * pen.calculative.worldRect.width
           : pen.textWidth;
       if (pen.whiteSpace !== 'pre-line') {
