@@ -3214,7 +3214,7 @@ export class Canvas {
       }
       globalStore.anchors[pen.name](pen);
     }
-
+    
     this.updatePenRect(pen);
     if (!pen.anchors && pen.calculative.worldAnchors) {
       pen.anchors = pen.calculative.worldAnchors.map((pt) => {

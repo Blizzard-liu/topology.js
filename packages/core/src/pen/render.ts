@@ -2693,6 +2693,7 @@ export function isShowChild(pen: Pen, store: Meta2dStore) {
  * @param calcChild 是否计算子画笔
  */
 export function calcInView(pen: Pen, calcChild = false) {
+  
   const { store, canvasRect } = pen.calculative.canvas as Canvas;
   if (calcChild) {
     pen.children?.forEach((id) => {

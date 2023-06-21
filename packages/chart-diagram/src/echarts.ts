@@ -116,7 +116,7 @@ function destory(pen: Pen) {
 }
 
 function move(pen: Pen) {
-  pen.calculative.singleton.div &&
+  pen.calculative.singleton && pen.calculative.singleton.div &&
     setElemPosition(pen, pen.calculative.singleton.div);
 }
 
