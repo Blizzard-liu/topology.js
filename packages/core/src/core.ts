@@ -549,6 +549,10 @@ export class Meta2d {
    * open 后执行初始化 Js ，每个图纸可配置一个初始化 js
    */
   private doInitJS() {
+    if(this.store.data.locked === 0 ) {
+      //编辑模式不执行
+      return
+    }
     const initJs = this.store.data.initJs;
     const initParams = this.store.data.initParams;
     if (initJs && initJs.trim()) {
