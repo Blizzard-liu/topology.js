@@ -554,11 +554,11 @@ export class Meta2d {
       return
     }
     const initJs = this.store.data.initJs;
-    const initParams = this.store.data.initParams;
+    const query = this.store.data.query;
     if (initJs && initJs.trim()) {
       try {
-        const fn = new Function('initParams', initJs) as (initParams: string) => void;
-        fn(initParams);
+        const fn = new Function('query', initJs) as (query: string) => void;
+        fn(query);
       } catch (e) {
         console.warn('initJs error', e);
       }
