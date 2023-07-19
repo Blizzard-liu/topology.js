@@ -2124,7 +2124,7 @@ export class Canvas {
       const pens = this.store.data.pens.filter((pen) => {
         if (
           pen.visible === false ||
-          pen.locked === LockState.Disable ||
+          pen.locked >= LockState.DisableMove ||
           pen.parentId
         ) {
           return false;
@@ -2143,6 +2143,7 @@ export class Canvas {
           return true;
         }
       });
+      //框选
       this.active(pens);
     }
 
