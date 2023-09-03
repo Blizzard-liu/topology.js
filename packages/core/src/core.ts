@@ -270,7 +270,7 @@ export class Meta2d {
         const keys = customTags.map((el) => el.key)
 
           let value: any = e.value;
-          value = value.replace(/pen./g, "this.");
+          // value = value.replace(/pen\./g, "this.");   // 老的做法  已废弃
           
           const fnJs = value.replaceAll
             ? value.replaceAll('.setValue(', '._setValue(')
