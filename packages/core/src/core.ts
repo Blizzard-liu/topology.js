@@ -275,7 +275,7 @@ export class Meta2d {
           const fnJs = value.replaceAll
             ? value.replaceAll('.setValue(', '._setValue(')
             : value.replace(/.setValue\(/g, '._setValue(');
-          e.fn = new Function('res','$SYS','$area_id','$module_id','$behavior','$permission', ...keys, fnJs) as (
+          e.fn = new Function('res','$SYS','$area_id','$module_id','$behavior','$permission','$SYS_NAME',  ...keys, fnJs) as (
             pen: Pen,
             params: string
           ) => void;
@@ -283,6 +283,7 @@ export class Meta2d {
       }
       const {sysName, area_id, module_id, behavior, permission } = this.store.data;
       let sw = sessionStorage.getItem('sys_name') || ''
+      let sname = sessionStorage.getItem('sname') || ''
       
       let sys_name = pen.sysName || sysName || sw 
       sys_name = sys_name.toLowerCase()
@@ -292,7 +293,7 @@ export class Meta2d {
       let res = sessionStorage.getItem('WS_DATA') || '{}'
       res = JSON.parse(res)
 
-      e.fn?.call(pen,res, sys_name, area_id, module_id, behavior, permission , ...values);
+      e.fn?.call(pen,res, sys_name, area_id, module_id, behavior, permission ,sname, ...values);
 
     } catch (err) {
       console.error('[meta2d]: Error on make a function:', err);
@@ -549,11 +550,16 @@ export class Meta2d {
    * open 后执行初始化 Js ，每个图纸可配置一个初始化 js
    */
   private doInitJS() {
+    if(this.store.data.locked === 0 ) {
+      //编辑模式不执行
+      return
+    }
     const initJs = this.store.data.initJs;
+    const query = this.store.data.query;
     if (initJs && initJs.trim()) {
       try {
-        const fn = new Function(initJs) as () => void;
-        fn();
+        const fn = new Function('query', initJs) as (query: string) => void;
+        fn(query);
       } catch (e) {
         console.warn('initJs error', e);
       }
@@ -954,8 +960,15 @@ export class Meta2d {
     // 若组合为状态，那么 parent 一定是 combine
     this.canvas.makePen(parent);
     // }
-
+    const initParent = deepClone(parent);
+    let minIndex = Infinity;
     pens.forEach((pen) => {
+      const index = this.store.data.pens.findIndex(
+        (_pen) => _pen.id === pen.id
+      );
+      if (index < minIndex) {
+        minIndex = index;
+      }
       if (pen === parent || pen.parentId === parent.id) {
         return;
       }
@@ -966,6 +979,9 @@ export class Meta2d {
       Object.assign(pen, childRect);
       pen.locked = pen.lockedOnCombine ?? LockState.DisableMove;
     });
+    //将组合后的父节点置底
+    this.store.data.pens.splice(minIndex, 0, parent);
+    this.store.data.pens.pop();
     this.canvas.active([parent]);
     let step = 1;
     // if (!oneIsParent) {
@@ -977,12 +993,25 @@ export class Meta2d {
     //   });
     //   this.store.emitter.emit('add', [parent]);
     // }
+ 
+    this.pushHistory({
+      type: EditType.Add,
+      pens: [initParent],
+      step: 3,
+    });
+    this.pushHistory({
+      type: EditType.Update,
+      initPens: [initParent],
+      pens: [parent],
+      step: 3,
+    });
     this.pushHistory({
       type: EditType.Update,
       initPens,
       pens,
-      step,
+      step: 3,
     });
+
     if (showChild != undefined) {
       pens.forEach((pen) => {
         calcInView(pen, true);

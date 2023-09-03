@@ -34,11 +34,15 @@ export function gif(pen: Pen): Path2D {
     // ) {
     //   img.src = pen.calculative.canvas.parent.store.options.cdn + pen.image;
     // }
-    img.id = 'gif_' + pen.id;
+    // img.id = 'gif_' + pen.id;
     gifsList[pen.id] = img; // 提前赋值，避免重复创建
     gif_z_index++;
     pen.calculative.zIndex = gif_z_index;
     img.onload = () => {
+      if (gifsList[pen.id] !== img) {
+        // console.log('gif 加载失败 ========')
+        return;
+      }
       pen.calculative.img = img;
       pen.calculative.imgNaturalWidth = img.naturalWidth || pen.iconWidth;
       pen.calculative.imgNaturalHeight = img.naturalHeight || pen.iconHeight;
@@ -56,27 +60,9 @@ export function gif(pen: Pen): Path2D {
 
 function destory(pen: Pen) {
 
-  // gifsList[pen.id].remove();
-  // gifsList[pen.id] = undefined;
+  gifsList[pen.id].remove();
+  gifsList[pen.id] = undefined;
 
-
-  let el = gifsList[pen.id]
-  try {
-    el.parentNode.removeChild(el);
-    gifsList[pen.id] = undefined;
-  } catch (error) {
-    let t = setTimeout(() => {
-      el && el.remove();
-      clearTimeout(t)
-    }, 0);
-    let ids = sessionStorage.getItem('GIF_ID_LIST') || '[]'
-     ids = JSON.parse(ids)
-     ids.push(el.id)
-     sessionStorage.setItem('GIF_ID_LIST',JSON.stringify(ids))
-
-    // console.error(error)
-  }
- 
 }
 
 function move(pen: Pen) {
