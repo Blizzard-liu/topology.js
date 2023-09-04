@@ -270,12 +270,11 @@ export class Meta2d {
         const keys = customTags.map((el) => el.key)
 
           let value: any = e.value;
-          value = value.replace(/pen\./g, "this.");   // 
           
           const fnJs = value.replaceAll
             ? value.replaceAll('.setValue(', '._setValue(')
             : value.replace(/.setValue\(/g, '._setValue(');
-          e.fn = new Function('res','$SYS','$area_id','$module_id','$behavior','$permission','$SYS_NAME',  ...keys, fnJs) as (
+          e.fn = new Function('res','$SYS','$area_id','$module_id','$behavior','$permission','$SYS_NAME','pen',  ...keys, fnJs) as (
             pen: Pen,
             params: string
           ) => void;
@@ -293,7 +292,7 @@ export class Meta2d {
       let res = sessionStorage.getItem('WS_DATA') || '{}'
       res = JSON.parse(res)
 
-      e.fn?.call(pen,res, sys_name, area_id, module_id, behavior, permission ,sname, ...values);
+      e.fn?.call(pen,res, sys_name, area_id, module_id, behavior, permission ,sname,pen, ...values);
 
     } catch (err) {
       console.error('[meta2d]: Error on make a function:', err);
