@@ -284,7 +284,7 @@ export class Meta2d {
       let sw = sessionStorage.getItem('sys_name') || ''
       let sname = sessionStorage.getItem('sname') || ''
       
-      let sys_name = pen.sysName || sysName || sw 
+      let sys_name = sysName || sw 
       sys_name = sys_name.toLowerCase()
       const values = customTags.map((el) => el.value)
       // console.log(customTags,values)
