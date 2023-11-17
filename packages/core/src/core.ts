@@ -274,13 +274,13 @@ export class Meta2d {
           const fnJs = value.replaceAll
             ? value.replaceAll('.setValue(', '._setValue(')
             : value.replace(/.setValue\(/g, '._setValue(');
-          e.fn = new Function('res','$SYS','$area_id','$module_id','$behavior','$permission','$SYS_NAME','pen',  ...keys, fnJs) as (
+          e.fn = new Function('res','$SYS','$area_id','$module_id','$behavior','$permission','$SYS_NAME','pen', '$query',  ...keys, fnJs) as (
             pen: Pen,
             params: string
           ) => void;
         
       }
-      const {sysName, area_id, module_id, behavior, permission } = this.store.data;
+      const {sysName, area_id, module_id, behavior, permission, query } = this.store.data;
       let sw = sessionStorage.getItem('sys_name') || ''
       let sname = sessionStorage.getItem('sname') || ''
       
@@ -292,7 +292,7 @@ export class Meta2d {
       let res = sessionStorage.getItem('WS_DATA') || '{}'
       res = JSON.parse(res)
 
-      e.fn?.call(pen,res, sys_name, area_id, module_id, behavior, permission ,sname,pen, ...values);
+      e.fn?.call(pen,res, sys_name, area_id, module_id, behavior, permission ,sname,pen, query,  ...values);
 
     } catch (err) {
       console.error('[meta2d]: Error on make a function:', err);
